@@ -1,10 +1,12 @@
-#include "../src/include/Engine.h"
-#include <glm/ext/vector_float3.hpp>
-#include <glm/vec3.hpp>
+#include <Engine.h>
 #include <iostream>
 
 int main(void) {
-  PhysTest test = {glm::vec3(0.0f, 0.5f, 0.0f)};
-  std::cout << "Hello World" << std::endl;
+  std::cout << "Hello, World!" << std::endl;
+  App app(800, 600);
+  std::cout << "app started" << std::endl;
+  app.Start();
+  std::cout << "Out" << std::endl;
+
   return 0;
 }

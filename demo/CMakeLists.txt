@@ -9,7 +9,7 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${DEMO_SOURCES})
 
 # Include directories
 target_include_directories(EngineDemo PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    ${CMAKE_SOURCE_DIR}/src/include
 )
 
 # Link dependencies
