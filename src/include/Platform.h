@@ -1,7 +1,6 @@
 #pragma once
 
 // Platform detection using predefined macros
-#include <string.h>
 #ifdef _WIN32
 /* Windows x64/x86 */
 #define PLATFORM_WINDOWS 1
@@ -26,25 +25,23 @@
 #elif defined(__linux__)
 /* Linux */
 #define PLATFORM_LINUX 1
-#include <wayland-client.h>
 #if defined(__WAYLAND__)
 #define PLATFORM_WAYLAND 1
-
+#include <wayland-client.h>
 #elif !defined(PLATFORM_WAYLAND)
 #ifdef __X11__
 #define PLATFORM_X11 1
 #else
-// Auto-detect based on environment
-#include <stdlib.h>
-static const bool waylandSession =
-    strstr(getenv("XDG_SESSION_TYPE"), "wayland");
-#if waylandSession
-#define PLATFORM_WAYLAND 1
-#define __WAYLAND__ 1
-#else
+// Runtime detection - both X11 and Wayland support compiled in
 #define PLATFORM_X11 1
-#define __X11__ 1
-#endif
+#define PLATFORM_WAYLAND 1
+#include <cstdlib>
+#include <string.h>
+static inline bool isWaylandSession() {
+  const char *sessionType = getenv("XDG_SESSION_TYPE");
+  const char *waylandDisplay = getenv("WAYLAND_DISPLAY");
+  return (sessionType && strstr(sessionType, "wayland")) || waylandDisplay;
+}
 #endif
 
 #endif

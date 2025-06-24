@@ -10,6 +10,5 @@ struct NativeWindowHandle {
 };
 
 NativeWindowHandle getNativeWindowHandle(GLFWwindow *window);
-void initBGFX(GLFWwindow *window,
-              bgfx::RendererType::Enum type = bgfx::RendererType::Count);
+void initBGFX(GLFWwindow *window);
 } // namespace Engine
