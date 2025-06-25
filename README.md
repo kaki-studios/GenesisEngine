@@ -1,7 +1,7 @@
 # C++ 3D game engine
 This is a 3D game engine written in C++. Dependencies:
 - bgfx (rendering backend)
-- glfw (windowing)
+- SDL3 (windowing)
 - glm (math)
 
 ## Usage

@@ -1,10 +1,15 @@
-#include <GLFW/glfw3.h>
+#pragma once
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_events.h>
 
 class App {
-  GLFWwindow *window;
 
 public:
+  SDL_Window *window;
+  SDL_Event currentEvent;
+  bool quit;
   App(int width, int height);
-  void Start();
+  bool ShouldClose();
+  void Update();
   ~App();
 };

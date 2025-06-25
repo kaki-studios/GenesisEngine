@@ -1,98 +1,51 @@
 #include "app.h"
-#include "Platform.h"
-#include "bgfx/defines.h"
-#include "platform/GLFWIntegration.h"
-#include <cstdio>
-#include <cstdlib>
+#include "Engine.h"
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_init.h>
+#include <SDL3/SDL_properties.h>
+#include <SDL3/SDL_video.h>
 #include <iostream>
-// #include <thread>
-
-#include <GLFW/glfw3.h>
+#include <platform/integration.h>
 
 #include <bgfx/bgfx.h>
 #include <bgfx/platform.h>
 
-static void glfw_errorCallback(int error, const char *description) {
-  fprintf(stderr, "GLFW error %d: %s\n", error, description);
-}
-
-static void glfw_keyCallback(GLFWwindow *window, int key, int scancode,
-                             int action, int mods) {
-  std::cout << "keycode:" << key << std::endl;
-
-  if (key == GLFW_KEY_A && action == GLFW_RELEASE) {
-    glfwSetWindowShouldClose(window, GLFW_TRUE);
-    std::cerr << "should close idk why not work" << std::endl;
-  }
-}
-
-static void glfw_closeCallback(GLFWwindow *window) {
-  std::cerr << "window closing" << std::endl;
-  std::cerr << glfwWindowShouldClose(window) << std::endl;
-  glfwSetWindowShouldClose(window, GLFW_TRUE);
-  std::cerr << "called window close" << std::endl;
-}
-
 // creates an app
 App::App(int width, int height) {
-#if PLATFORM_WAYLAND && !PLATFORM_X11
-  glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
-  glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
-  glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
-#endif
-  glfwSetErrorCallback(glfw_errorCallback);
-  if (!glfwInit()) {
-    // fatal error
-    std::cerr << "Couldn't initialize GLFW" << std::endl;
-    std::exit(1);
+  quit = false;
+  if (!SDL_Init(SDL_INIT_VIDEO)) {
+    std::cerr << "Couldn't initialize SDL" << std::endl;
+    abort();
   }
-  std::cerr << (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND) << std::endl;
-  // we will provide our own api (bgfx)
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-  GLFWwindow *window = glfwCreateWindow(width, height, "TEST TITLE",
-                                        glfwGetPrimaryMonitor(), nullptr);
 
+  SDL_Window *window =
+      SDL_CreateWindow("TEST TITLE", width, height, SDL_WINDOW_FULLSCREEN);
   if (!window) {
-    glfwTerminate();
+    SDL_Quit();
     std::cerr << "Couldn't initialize window" << std::endl;
-    std::exit(1);
+    abort();
   }
-  glfwSetKeyCallback(window, glfw_keyCallback);
-  // glfwSetWindowCloseCallback(window, glfw_closeCallback);
-  std::cout << "rendering frame" << std::endl;
 
   // renders frame before init so bgfx doesn't create a seperate render thread
   // since the window creation and rendering must be on the same thread (on most
   // rendering apis) TODO a seperate render thread
   bgfx::renderFrame();
   std::cout << "initializing bgfx" << std::endl;
-  Engine::initBGFX(window);
+  Integration::IntegrateToBGFX(window);
 }
 
 App::~App() {
   bgfx::shutdown();
   if (window)
-    glfwDestroyWindow(window);
-  glfwTerminate();
+    SDL_DestroyWindow(window);
+  SDL_Quit();
 }
 
-void App::Start() {
-  std::cerr << (glfwWindowShouldClose(window) ? "close" : "open") << std::endl;
-  std::cerr << (window ? "window exists" : "window doesn't exist") << std::endl;
-  // idk why i have to do this
-  glfwSetWindowShouldClose(window, GLFW_FALSE);
-
-  while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
-
-    bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff);
-    bgfx::touch(0);
-
-    bgfx::frame();
-    if (glfwWindowShouldClose(window)) {
-      break;
-    }
+bool App::ShouldClose() { return quit; }
+void App::Update() {
+  SDL_PollEvent(&this->currentEvent);
+  if (currentEvent.type == SDL_EVENT_QUIT) {
+    quit = true;
   }
-  std::cerr << "broke" << std::endl;
 }

@@ -37,8 +37,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
     message(STATUS "Building with both X11 and Wayland support for runtime detection")
     #test
-    set(GLFW_BUILD_WAYLAND ON CACHE BOOL "" FORCE)
-    set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
+    # set(GLFW_BUILD_WAYLAND ON CACHE BOOL "" FORCE)
+    # set(GLFW_BUILD_X11 ON CACHE BOOL "" FORCE)
 endif()
 
 # Add subdirectories

@@ -1,5 +1,5 @@
-# Find all source files
-file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp" "*.h" "*.hpp")
+# Find all source files (c++, headers and shaders)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "*.cpp" "*.h" "*.hpp" "*.sc")
 file(GLOB PUBLIC_HEADERS CONFIGURE_DEPENDS "include/*.h")
 
 # Create library
@@ -18,7 +18,7 @@ target_include_directories(EngineLib PRIVATE
     $<TARGET_PROPERTY:bgfx,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:bx,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:bimg,INTERFACE_INCLUDE_DIRECTORIES>
-
+    # $<TARGET_PROPERTY:SDL3,INTERFACE_INCLUDE_DIRECTORIES>
 )
 #wayland fuckery
 if(UNIX AND NOT APPLE)
@@ -34,12 +34,31 @@ target_link_libraries(EngineLib PUBLIC
     bgfx
     bx
     bimg
-    glfw
+    SDL3
     glm
 )
 
+
+
 get_target_property(BGFX_INCLUDES bgfx INTERFACE_INCLUDE_DIRECTORIES)
 target_include_directories(EngineLib PUBLIC ${BGFX_INCLUDES})
+
+bgfx_compile_shaders(
+  TYPE VERTEX
+  SHADERS rendering/v_simple.sc
+  VARYING_DEF varying.def.sc
+  OUTPUT_DIR ${CMAKE_BINARY_DIR}
+  # AS_HEADERS
+)
+bgfx_compile_shaders(
+  TYPE FRAGMENT
+  SHADERS f_simple.sc
+  VARYING_DEF ${CMAKE_SOURCE_DIR}/varying.def.sc
+  OUTPUT_DIR ${CMAKE_BINARY_DIR}
+  # AS_HEADERS
+)
+
+target_include_directories(EngineLib PRIVATE ${CMAKE_BINARY_DIR})
 
 
 # Organize files in IDE
