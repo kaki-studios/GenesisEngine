@@ -33,16 +33,16 @@ NativeWindowHandle getNativeWindowHandle(GLFWwindow *window) {
 
   NativeWindowHandle handle = {};
 #if PLATFORM_LINUX
-  // Runtime detection of display server
-  if (glfwGetPlatform() == GLFW_PLATFORM_WAYLAND) {
-    std::cerr << "wayland" << std::endl;
-    handle.display = glfwGetWaylandDisplay();
-    handle.window = glfwGetWaylandWindow(window);
-  } else {
-    std::cerr << "x11" << std::endl;
-    handle.display = glfwGetX11Display();
-    handle.window = (void *)(uintptr_t)glfwGetX11Window(window);
-  }
+#if PLATFORM_WAYLAND
+  std::cerr << "wayland" << std::endl;
+  handle.display = glfwGetWaylandDisplay();
+  handle.window = glfwGetWaylandWindow(window);
+#else
+  std::cerr << "x11" << std::endl;
+  handle.display = glfwGetX11Display();
+  handle.window = (void *)(uintptr_t)glfwGetX11Window(window);
+#endif
+
 #elif PLATFORM_MACOS
 
   std::cerr << "macos" << std::endl;
@@ -105,6 +105,7 @@ void initBGFX(GLFWwindow *window) {
   bgfx::Init init;
   init.platformData = pd;
   if (glfwVulkanSupported()) {
+    std::cerr << "vulkan is supported" << std::endl;
     init.type = bgfx::RendererType::Vulkan;
   }
 

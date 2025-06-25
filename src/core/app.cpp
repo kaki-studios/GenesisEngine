@@ -18,21 +18,24 @@ static void glfw_errorCallback(int error, const char *description) {
 
 static void glfw_keyCallback(GLFWwindow *window, int key, int scancode,
                              int action, int mods) {
+  std::cout << "keycode:" << key << std::endl;
+
   if (key == GLFW_KEY_A && action == GLFW_RELEASE) {
-    std::cerr << "should close" << std::endl;
     glfwSetWindowShouldClose(window, GLFW_TRUE);
+    std::cerr << "should close idk why not work" << std::endl;
   }
 }
 
 static void glfw_closeCallback(GLFWwindow *window) {
   std::cerr << "window closing" << std::endl;
-  // glfwSetWindowShouldClose(window, GLFW_TRUE);
+  std::cerr << glfwWindowShouldClose(window) << std::endl;
+  glfwSetWindowShouldClose(window, GLFW_TRUE);
   std::cerr << "called window close" << std::endl;
 }
 
 // creates an app
 App::App(int width, int height) {
-#if PLATFORM_WAYLAND
+#if PLATFORM_WAYLAND && !PLATFORM_X11
   glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
   glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_TRUE);
   glfwWindowHint(GLFW_FOCUSED, GLFW_TRUE);
@@ -56,7 +59,7 @@ App::App(int width, int height) {
     std::exit(1);
   }
   glfwSetKeyCallback(window, glfw_keyCallback);
-  glfwSetWindowCloseCallback(window, glfw_closeCallback);
+  // glfwSetWindowCloseCallback(window, glfw_closeCallback);
   std::cout << "rendering frame" << std::endl;
 
   // renders frame before init so bgfx doesn't create a seperate render thread
@@ -75,6 +78,11 @@ App::~App() {
 }
 
 void App::Start() {
+  std::cerr << (glfwWindowShouldClose(window) ? "close" : "open") << std::endl;
+  std::cerr << (window ? "window exists" : "window doesn't exist") << std::endl;
+  // idk why i have to do this
+  glfwSetWindowShouldClose(window, GLFW_FALSE);
+
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();
 
@@ -82,6 +90,9 @@ void App::Start() {
     bgfx::touch(0);
 
     bgfx::frame();
+    if (glfwWindowShouldClose(window)) {
+      break;
+    }
   }
   std::cerr << "broke" << std::endl;
 }

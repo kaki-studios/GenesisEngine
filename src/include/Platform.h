@@ -28,7 +28,7 @@
 #if defined(__WAYLAND__)
 #define PLATFORM_WAYLAND 1
 #include <wayland-client.h>
-#elif !defined(PLATFORM_WAYLAND)
+#elif !defined(__WAYLAND__)
 #ifdef __X11__
 #define PLATFORM_X11 1
 #else

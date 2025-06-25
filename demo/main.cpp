@@ -1,8 +1,9 @@
 #include <Engine.h>
 #include <iostream>
+#include <ostream>
 
 int main(void) {
-  std::cout << "Hello, World!" << std::endl;
+  std::cout << "starting engine demo" << std::endl;
   App app(800, 600);
   std::cout << "app started" << std::endl;
   app.Start();

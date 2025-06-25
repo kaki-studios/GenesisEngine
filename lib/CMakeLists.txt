@@ -1,3 +1,6 @@
+set(BGFX_CONFIG_DEBUG ${CMAKE_BUILD_TYPE} STREQUAL "Debug"})
+set(GLFW_BUILD_DEBUG ${CMAKE_BUILD_TYPE} STREQUAL "Debug"})
+
 # BGFX (assuming it has its own CMakeLists)
 set(BGFX_WITH_WAYLAND ON CACHE BOOL "Enable wayland support")
 add_subdirectory(bgfx.cmake)
