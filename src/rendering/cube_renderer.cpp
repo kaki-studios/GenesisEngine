@@ -8,6 +8,8 @@
 #include <cstdint>
 #include <iostream>
 
+#include "bgfx/defines.h"
+#include "glm/ext/scalar_constants.hpp"
 #include "shaders/generated/essl/f_simple.sc.bin.h"
 #include "shaders/generated/essl/v_simple.sc.bin.h"
 #include "shaders/generated/glsl/f_simple.sc.bin.h"
@@ -63,7 +65,10 @@ CubeRenderer::CubeRenderer(App *app) {
   bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x443355FF, 1.0f,
                      0);
 }
-void CubeRenderer::Update() {
+void CubeRenderer::Update(float dt) {
+  rotation += 2.0f * dt;
+  rotation = bx::wrap(rotation, 2 * glm::pi<float>());
+  std::cerr << rotation << std::endl;
 
   int width, height;
   if (!app->GetWindowDims(&width, &height)) {
@@ -72,7 +77,7 @@ void CubeRenderer::Update() {
   bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x443355FF, 1.0f,
                      0);
   const bx::Vec3 at = {0.0f, 0.0f, 0.0f};
-  const bx::Vec3 eye = {0.0f, 0.0f, 10.0f};
+  const bx::Vec3 eye = {0.0f, 0.0f, 1.5f};
   float view[16];
   bx::mtxLookAt(view, eye, at);
   float proj[16];
@@ -81,11 +86,9 @@ void CubeRenderer::Update() {
               bgfx::getCaps()->homogeneousDepth);
   bgfx::setViewTransform(0, view, proj);
   bgfx::setViewRect(0, 0, 0, (uint16_t)width, (uint16_t)height);
-  const bgfx::Stats *stats = bgfx::getStats();
-  std::cout << "w: " << stats->width << " h: " << stats->height << std::endl;
   bgfx::touch(0);
   float mtx[16];
-  bx::mtxRotateY(mtx, 0.0f);
+  bx::mtxRotateY(mtx, rotation);
 
   mtx[12] = 0.0f;
   mtx[13] = 0.0f;
@@ -94,7 +97,7 @@ void CubeRenderer::Update() {
   bgfx::setTransform(mtx);
   bgfx::setVertexBuffer(0, vbh);
   bgfx::setIndexBuffer(ibh);
-  bgfx::setState(BGFX_STATE_DEFAULT);
+  bgfx::setState(BGFX_STATE_DEFAULT | BGFX_STATE_CULL_MASK);
   bgfx::submit(0, program);
   bgfx::frame();
 }

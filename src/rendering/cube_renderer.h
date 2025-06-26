@@ -23,6 +23,7 @@ class CubeRenderer {
   bgfx::VertexBufferHandle vbh;
   bgfx::IndexBufferHandle ibh;
   bgfx::ProgramHandle program;
+  float rotation;
 
   const uint16_t *cubeTriList;
   PosColorVertex *cubeVertices;
@@ -30,5 +31,5 @@ class CubeRenderer {
 public:
   CubeRenderer(App *app);
   ~CubeRenderer();
-  void Update();
+  void Update(float dt);
 };

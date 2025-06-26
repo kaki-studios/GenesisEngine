@@ -13,11 +13,19 @@ int main(void) {
   App app(1920, 1080);
   CubeRenderer renderer(&app);
   std::cout << "App starting..." << std::endl;
-  bgfx::setDebug(BGFX_DEBUG_TEXT);
+  bgfx::setDebug(BGFX_DEBUG_STATS);
   // these should be in app
+  float now, last, deltaTime;
+  now = SDL_GetTicks();
+  last = now;
+  deltaTime = 0.0f;
+
   while (!app.ShouldClose()) {
+    deltaTime = (now - last) / 1000.0f;
+    last = now;
+    now = SDL_GetTicks();
     app.Update();
-    renderer.Update();
+    renderer.Update(deltaTime);
   }
   std::cout << "Out" << std::endl;
 
