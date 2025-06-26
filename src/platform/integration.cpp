@@ -67,8 +67,6 @@ void IntegrateToBGFX(SDL_Window *window) {
     std::cerr << "Failed to initialize bgfx" << std::endl;
     std::exit(1);
   }
-  bgfx::setViewClear(0, BGFX_CLEAR_COLOR);
-  bgfx::setViewRect(0, 0, 0, bgfx::BackbufferRatio::Equal);
   std::cout << "Successfully initialized bgfx with "
             << bgfx::getRendererName(bgfx::getRendererType()) << std::endl;
 }

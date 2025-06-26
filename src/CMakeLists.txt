@@ -45,21 +45,18 @@ target_include_directories(EngineLib PUBLIC ${BGFX_INCLUDES})
 
 bgfx_compile_shaders(
   TYPE VERTEX
-  SHADERS rendering/v_simple.sc
-  VARYING_DEF varying.def.sc
-  OUTPUT_DIR ${CMAKE_BINARY_DIR}
-  # AS_HEADERS
+  SHADERS ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/v_simple.sc
+  VARYING_DEF ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/varying.def.sc
+  OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/generated
+  AS_HEADERS
 )
 bgfx_compile_shaders(
   TYPE FRAGMENT
-  SHADERS f_simple.sc
-  VARYING_DEF ${CMAKE_SOURCE_DIR}/varying.def.sc
-  OUTPUT_DIR ${CMAKE_BINARY_DIR}
-  # AS_HEADERS
+  SHADERS ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/f_simple.sc
+  VARYING_DEF ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/varying.def.sc
+  OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/generated
+  AS_HEADERS
 )
-
-target_include_directories(EngineLib PRIVATE ${CMAKE_BINARY_DIR})
-
 
 # Organize files in IDE
 source_group("Source Files" FILES ${SOURCES})

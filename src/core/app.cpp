@@ -20,7 +20,8 @@ App::App(int width, int height) {
   }
 
   SDL_Window *window =
-      SDL_CreateWindow("TEST TITLE", width, height, SDL_WINDOW_FULLSCREEN);
+      SDL_CreateWindow("TEST TITLE", width, height,
+                       SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE);
   if (!window) {
     SDL_Quit();
     std::cerr << "Couldn't initialize window" << std::endl;
@@ -46,6 +47,7 @@ bool App::ShouldClose() { return quit; }
 void App::Update() {
   SDL_PollEvent(&this->currentEvent);
   if (currentEvent.type == SDL_EVENT_QUIT) {
+    std::cerr << "quitting" << std::endl;
     quit = true;
   }
 }

@@ -12,7 +12,6 @@ int main(void) {
   App app(800, 600);
   CubeRenderer renderer(800, 600);
   std::cout << "app started" << std::endl;
-  // why??
   bgfx::setDebug(BGFX_DEBUG_TEXT);
   while (!app.ShouldClose()) {
     app.Update();

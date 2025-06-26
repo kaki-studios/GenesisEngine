@@ -1,4 +1,5 @@
 set(BGFX_CONFIG_DEBUG ${CMAKE_BUILD_TYPE} STREQUAL "Debug"})
+set(BGFX_BUILD_TOOLS_SHADER ON CACHE BOOL "Enable shader compilation")
 
 # BGFX (assuming it has its own CMakeLists)
 set(BGFX_WITH_WAYLAND ON CACHE BOOL "Enable wayland support")

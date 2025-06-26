@@ -1,44 +1,38 @@
 #include "cube_renderer.h"
-#include "bx/math.h"
 #include <SDL3/SDL_touch.h>
 #include <bgfx/bgfx.h>
+#include <bgfx/embedded_shader.h>
+#include <bx/math.h>
 #include <cstdint>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
+
+#include "shaders/generated/essl/f_simple.sc.bin.h"
+#include "shaders/generated/essl/v_simple.sc.bin.h"
+#include "shaders/generated/glsl/f_simple.sc.bin.h"
+#include "shaders/generated/glsl/v_simple.sc.bin.h"
+#include "shaders/generated/spirv/f_simple.sc.bin.h"
+#include "shaders/generated/spirv/v_simple.sc.bin.h"
+#if defined(_WIN32)
+#include "shaders/generated/dx11/f_simple.sc.bin.h"
+#include "shaders/generated/dx11/v_simple.sc.bin.h"
+#endif //  defined(_WIN32)
+#if __APPLE__
+#include "shaders/generated/mtl/f_simple.sc.bin.h"
+#include "shaders/generated/mtl/v_simple.sc.bin.h"
+#endif // __APPLE__
+#if !defined(_WIN32)
+#undef BGFX_EMBEDDED_SHADER_DXBC
+#define BGFX_EMBEDDED_SHADER_DXBC(...)
+#endif
 
 bgfx::VertexLayout PosColorVertex::ms_decl;
-
-bgfx::ShaderHandle loadShader(const char *_name) {
-  char *data = new char[2048];
-  std::ifstream file;
-  size_t fileSize;
-  file.open(_name, std::ios::binary);
-  if (file.fail()) {
-    std::cerr << "couldn't find shader " << _name << " in directory "
-              << std::filesystem::current_path() << std::endl;
-    return bgfx::ShaderHandle{0};
-  }
-  if (file.is_open()) {
-    file.seekg(0, std::ios::end);
-    fileSize = file.tellg();
-    file.seekg(0, std::ios::beg);
-    file.read(data, fileSize);
-    file.close();
-  }
-  const bgfx::Memory *mem = bgfx::copy(data, fileSize + 1);
-  delete[] data;
-  mem->data[mem->size - 1] = '\0';
-
-  std::cerr << "memSize" << mem->size << std::endl;
-  bgfx::ShaderHandle handle = bgfx::createShader(mem);
-  bgfx::setName(handle, _name);
-  return handle;
-}
+const bgfx::EmbeddedShader k_vs = BGFX_EMBEDDED_SHADER(v_simple);
+const bgfx::EmbeddedShader k_fs = BGFX_EMBEDDED_SHADER(f_simple);
 
 CubeRenderer::CubeRenderer(int width, int height) {
-  bgfx::ShaderHandle vsh = loadShader("v_simple.bin");
-  bgfx::ShaderHandle fsh = loadShader("f_simple.bin");
+  bgfx::ShaderHandle vsh =
+      bgfx::createEmbeddedShader(&k_vs, bgfx::getRendererType(), "f_simple.sc");
+  bgfx::ShaderHandle fsh =
+      bgfx::createEmbeddedShader(&k_fs, bgfx::getRendererType(), "v_simple.sc");
 
   program = bgfx::createProgram(vsh, fsh, true);
 
@@ -55,6 +49,12 @@ CubeRenderer::CubeRenderer(int width, int height) {
       PosColorVertex::ms_decl);
   ibh =
       bgfx::createIndexBuffer(bgfx::makeRef(cubeTriList, sizeof(uint16_t) * 6));
+  // Set view rectangle for 0th view
+  bgfx::setViewRect(0, 0, 0, uint16_t(width), uint16_t(height));
+
+  // Clear the view rect
+  bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x443355FF, 1.0f,
+                     0);
 }
 void CubeRenderer::Update() {
   const bx::Vec3 at = {0.0f, 0.0f, 0.0f};
