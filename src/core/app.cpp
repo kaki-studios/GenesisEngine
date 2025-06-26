@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
 #include <iostream>
@@ -22,6 +23,7 @@ App::App(int width, int height) {
   SDL_Window *window =
       SDL_CreateWindow("TEST TITLE", width, height,
                        SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE);
+  this->window = window;
   if (!window) {
     SDL_Quit();
     std::cerr << "Couldn't initialize window" << std::endl;
@@ -45,9 +47,22 @@ App::~App() {
 
 bool App::ShouldClose() { return quit; }
 void App::Update() {
-  SDL_PollEvent(&this->currentEvent);
-  if (currentEvent.type == SDL_EVENT_QUIT) {
-    std::cerr << "quitting" << std::endl;
-    quit = true;
+  while (SDL_PollEvent(&this->currentEvent)) {
+    switch (currentEvent.type) {
+    case SDL_EVENT_QUIT:
+      std::cerr << "quitting" << std::endl;
+      quit = true;
+      break;
+    case SDL_EVENT_WINDOW_RESIZED:
+      int newWidth = currentEvent.window.data1;
+      int newHeight = currentEvent.window.data2;
+
+      // Update bgfx backbuffer size
+      bgfx::reset((uint32_t)newWidth, (uint32_t)newHeight, BGFX_RESET_VSYNC);
+      break;
+    };
   }
+}
+bool App::GetWindowDims(int *width, int *height) {
+  return SDL_GetWindowSize(this->window, width, height);
 }

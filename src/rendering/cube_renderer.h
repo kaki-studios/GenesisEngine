@@ -1,3 +1,4 @@
+#include "../core/app.h"
 #include <bgfx/bgfx.h>
 
 struct PosColorVertex {
@@ -17,8 +18,7 @@ struct PosColorVertex {
 };
 
 class CubeRenderer {
-  int width;
-  int height;
+  App *app;
 
   bgfx::VertexBufferHandle vbh;
   bgfx::IndexBufferHandle ibh;
@@ -28,7 +28,7 @@ class CubeRenderer {
   PosColorVertex *cubeVertices;
 
 public:
-  CubeRenderer(int width, int height);
+  CubeRenderer(App *app);
   ~CubeRenderer();
   void Update();
 };

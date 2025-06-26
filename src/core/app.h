@@ -11,5 +11,6 @@ public:
   App(int width, int height);
   bool ShouldClose();
   void Update();
+  bool GetWindowDims(int *width, int *height);
   ~App();
 };
