@@ -1,8 +1,7 @@
 # High Level TODOs
 
-- [ ] Game loop (APIs etc.)
-- [ ] ECS
-- [ ] Simple ECS/entity system
+- [x] Game loop (APIs etc.) (kind of)
+- [x] ECS
 - [ ] Renderer
 - [ ] Physics Engine (XPBD)
 

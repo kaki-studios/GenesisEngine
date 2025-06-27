@@ -1,35 +1,29 @@
 #include "../core/app.h"
+#include "ECS.h"
+#include "glm/fwd.hpp"
 #include <bgfx/bgfx.h>
+#include <glm/common.hpp>
+#include <glm/gtc/quaternion.hpp>
 
-struct PosColorVertex {
-  float m_x;
-  float m_y;
-  float m_z;
-  uint32_t m_abgr;
-
-  static void init() {
-    ms_decl.begin()
-        .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
-        .end();
-  };
-
-  static bgfx::VertexLayout ms_decl;
+struct Transform {
+  glm::vec3 position;
+  glm::quat rotation;
 };
 
-class CubeRenderer {
-  App *app;
+struct Cuboid {
+  glm::vec3 halfExtents;
+};
 
-  bgfx::VertexBufferHandle vbh;
-  bgfx::IndexBufferHandle ibh;
-  bgfx::ProgramHandle program;
-  float rotation;
-
-  const uint16_t *cubeTriList;
-  PosColorVertex *cubeVertices;
-
+class CubeRenderer : public ECS::System {
 public:
-  CubeRenderer(App *app);
-  ~CubeRenderer();
+  CubeRenderer() = default;
   void Update(float dt);
+  void Init(App *app);
+
+private:
+  App *app;
+  // rendering stuff
+  bgfx::VertexBufferHandle cubeVbh;
+  bgfx::IndexBufferHandle cubeIbh;
+  bgfx::ProgramHandle program;
 };

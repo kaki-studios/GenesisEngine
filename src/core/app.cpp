@@ -14,6 +14,7 @@
 
 // creates an app
 App::App(int width, int height) {
+  coordinator.Init();
   quit = false;
   if (!SDL_Init(SDL_INIT_VIDEO)) {
     std::cerr << "Couldn't initialize SDL" << std::endl;
@@ -29,7 +30,6 @@ App::App(int width, int height) {
     std::cerr << "Couldn't initialize window" << std::endl;
     abort();
   }
-
   // renders frame before init so bgfx doesn't create a seperate render thread
   // since the window creation and rendering must be on the same thread (on most
   // rendering apis) TODO a seperate render thread

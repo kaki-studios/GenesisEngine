@@ -1,4 +1,5 @@
 #pragma once
+#include "../ecs/coordinator.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 
@@ -12,5 +13,6 @@ public:
   bool ShouldClose();
   void Update();
   bool GetWindowDims(int *width, int *height);
+  ECS::Coordinator coordinator;
   ~App();
 };
