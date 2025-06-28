@@ -1,7 +1,5 @@
 #include "cube_renderer.h"
 #include "bgfx/embedded_shader.h"
-#include "glm/ext/quaternion_geometric.hpp"
-#include "glm/ext/quaternion_transform.hpp"
 #include "glm/trigonometric.hpp"
 #include <../ecs/system.h>
 #include <bgfx/bgfx.h>
@@ -121,13 +119,6 @@ void CubeRenderer::Init(App *app) {
   u_lightDir = bgfx::createUniform("u_lightDir", bgfx::UniformType::Vec4);
   bgfx::UniformHandle uniforms[2];
 
-  std::cout << bgfx::getShaderUniforms(fsh, uniforms, 2) << std::endl;
-  bgfx::UniformInfo info;
-  for (int i = 0; i < 2; i++) {
-    bgfx::getUniformInfo(uniforms[i], info);
-    std::cout << info.name << std::endl;
-  }
-
   int width, height;
   app->GetWindowDims(&width, &height);
   // Set view rectangle for 0th view
@@ -150,7 +141,7 @@ glm::mat4 ProjectionMatrix(float fovy, float aspect, float near, float far,
              : glm::perspectiveZO(glm::radians(fovy), aspect, near, far);
 }
 
-void CubeRenderer::Update(float dt) {
+void CubeRenderer::Update() {
 
   const glm::vec3 center = {0.0f, 0.0f, 0.0f};
   const glm::vec3 eye = {0.0f, 1.5f, 10.0f};
@@ -176,15 +167,10 @@ void CubeRenderer::Update(float dt) {
   bgfx::setUniform(u_lightDir, lightDir);
 
   for (auto const &entity : mEntities) {
-
     auto &transform = app->coordinator.GetComponent<Transform>(entity);
     auto &cuboid = app->coordinator.GetComponent<Cuboid>(entity);
     float baseCol[4] = {cuboid.color.x, cuboid.color.y, cuboid.color.z, 1.0f};
     bgfx::setUniform(u_baseCol, baseCol);
-    transform.rotation = glm::rotate(
-        transform.rotation, glm::radians(40.0f) * dt, {0.0f, 1.0f, 0.0f});
-    // have to normalize!!
-    transform.rotation = glm::normalize(transform.rotation);
 
     glm::mat4 transformMat = glm::translate(glm::mat4(1), transform.position) *
                              glm::mat4_cast(transform.rotation) *

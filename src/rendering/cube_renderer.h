@@ -18,7 +18,7 @@ struct Cuboid {
 class CubeRenderer : public ECS::System {
 public:
   CubeRenderer() = default;
-  void Update(float dt);
+  void Update();
   void Init(App *app);
 
 private:
