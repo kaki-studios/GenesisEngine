@@ -29,10 +29,11 @@ int main(void) {
                          .rotation = glm::quat(),
                      });
 
-    app.coordinator.AddComponent(entities[i],
-                                 Cuboid{
-                                     .halfExtents = glm::vec3(1.0f, 1.0f, 1.0f),
-                                 });
+    app.coordinator.AddComponent(
+        entities[i], Cuboid{
+                         .halfExtents = glm::vec3(2.0f, 1.0f * (i + 1), 1.0f),
+                         .color = glm::vec3(1.0f, 0.5f * i, 0.0f),
+                     });
   }
 
   std::cout << "App starting..." << std::endl;

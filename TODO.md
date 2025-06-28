@@ -3,6 +3,7 @@
 - [x] Game loop (APIs etc.) (kind of)
 - [x] ECS
 - [ ] Renderer
+- [ ] ImGui integration
 - [ ] Physics Engine (XPBD)
 
 ## Low Level TODOs

@@ -59,7 +59,6 @@ void App::Update() {
 
       // Update bgfx backbuffer size
       bgfx::reset((uint32_t)newWidth, (uint32_t)newHeight, BGFX_RESET_VSYNC);
-      break;
     };
   }
 }

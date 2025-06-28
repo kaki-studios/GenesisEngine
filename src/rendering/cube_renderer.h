@@ -12,6 +12,7 @@ struct Transform {
 
 struct Cuboid {
   glm::vec3 halfExtents;
+  glm::vec3 color;
 };
 
 class CubeRenderer : public ECS::System {
@@ -24,6 +25,9 @@ private:
   App *app;
   // rendering stuff
   bgfx::VertexBufferHandle cubeVbh;
-  bgfx::IndexBufferHandle cubeIbh;
+  // bgfx::IndexBufferHandle cubeIbh;
   bgfx::ProgramHandle program;
+
+  bgfx::UniformHandle u_baseCol;
+  bgfx::UniformHandle u_lightDir;
 };

@@ -58,6 +58,22 @@ bgfx_compile_shaders(
   AS_HEADERS
 )
 
+bgfx_compile_shaders(
+  TYPE VERTEX
+  SHADERS ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/v_lighting.sc
+  VARYING_DEF ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/varying.def.sc
+  OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/generated
+  AS_HEADERS
+)
+bgfx_compile_shaders(
+  TYPE FRAGMENT
+  SHADERS ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/f_lighting.sc
+  VARYING_DEF ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/varying.def.sc
+  OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/generated
+  AS_HEADERS
+)
+
+
 # Organize files in IDE
 source_group("Source Files" FILES ${SOURCES})
 source_group("Public Headers" FILES ${PUBLIC_HEADERS})

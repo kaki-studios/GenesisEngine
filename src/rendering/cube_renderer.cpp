@@ -1,4 +1,8 @@
 #include "cube_renderer.h"
+#include "bgfx/embedded_shader.h"
+#include "glm/ext/quaternion_geometric.hpp"
+#include "glm/ext/quaternion_transform.hpp"
+#include "glm/trigonometric.hpp"
 #include <../ecs/system.h>
 #include <bgfx/bgfx.h>
 #include <bgfx/defines.h>
@@ -9,127 +13,120 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
 
-// shader hell
-#include "bgfx/embedded_shader.h"
-#include "glm/ext/quaternion_transform.hpp"
-#include "shaders/generated/essl/f_simple.sc.bin.h"
-#include "shaders/generated/essl/v_simple.sc.bin.h"
-#include "shaders/generated/glsl/f_simple.sc.bin.h"
-#include "shaders/generated/glsl/v_simple.sc.bin.h"
-#include "shaders/generated/spirv/f_simple.sc.bin.h"
-#include "shaders/generated/spirv/v_simple.sc.bin.h"
+// shader hell TODO move to a macro
+#include "shaders/generated/essl/f_lighting.sc.bin.h"
+#include "shaders/generated/essl/v_lighting.sc.bin.h"
+#include "shaders/generated/glsl/f_lighting.sc.bin.h"
+#include "shaders/generated/glsl/v_lighting.sc.bin.h"
+#include "shaders/generated/spirv/f_lighting.sc.bin.h"
+#include "shaders/generated/spirv/v_lighting.sc.bin.h"
 #if defined(_WIN32)
-#include "shaders/generated/dx11/f_simple.sc.bin.h"
-#include "shaders/generated/dx11/v_simple.sc.bin.h"
+#include "shaders/generated/dx11/f_lighting.sc.bin.h"
+#include "shaders/generated/dx11/v_lighting.sc.bin.h"
 #endif //  defined(_WIN32)
 #if __APPLE__
-#include "shaders/generated/mtl/f_simple.sc.bin.h"
-#include "shaders/generated/mtl/v_simple.sc.bin.h"
+#include "shaders/generated/mtl/f_lighting.sc.bin.h"
+#include "shaders/generated/mtl/v_lighting.sc.bin.h"
 #endif // __APPLE__
 #if !defined(_WIN32)
 #undef BGFX_EMBEDDED_SHADER_DXBC
 #define BGFX_EMBEDDED_SHADER_DXBC(...)
 #endif
 
-struct VertPosCol {
-  float x;
-  float y;
-  float z;
-  uint32_t abgr;
+// no vertex color
+struct Vertex {
+  float pos[3];
+  float normal[3];
   static void init() {
     ms_decl.begin()
         .add(bgfx::Attrib::Position, 3, bgfx::AttribType::Float)
-        .add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
+        .add(bgfx::Attrib::Normal, 3, bgfx::AttribType::Float)
         .end();
   };
 
   static bgfx::VertexLayout ms_decl;
 };
+bgfx::VertexLayout Vertex::ms_decl;
 
-bgfx::VertexLayout VertPosCol::ms_decl;
+// pre-duplicated vertices, so no need for indices
+// each vertex has the same normal (flat shading)
+const Vertex vertList[36] = {
+    // Front face (0, 0, 1)
+    {{-1, -1, 1}, {0, 0, 1}},
+    {{1, -1, 1}, {0, 0, 1}},
+    {{1, 1, 1}, {0, 0, 1}},
+    {{1, 1, 1}, {0, 0, 1}},
+    {{-1, 1, 1}, {0, 0, 1}},
+    {{-1, -1, 1}, {0, 0, 1}},
 
-/* crude ascii visualization
-5----------6
-|\         |\
-| \        | \
-|  1-------+--2
-7__|_______8  |
- \ |        \ |
-  \|         \|
-   3----------4
-*/
-const VertPosCol vertList[] = {
-    {-1.0f, -1.0f, -1.0f, 0xffff00ff}, {1.0f, -1.0f, -1.0f, 0xff00ffff},
-    {-1.0f, 1.0f, -1.0f, 0xffffff00},  {1.0f, 1.0f, -1.0f, 0xff0000ff},
-    {-1.0f, -1.0f, 1.0f, 0xff000000},  {1.0f, -1.0f, 1.0f, 0xff880088},
-    {-1.0f, 1.0f, 1.0f, 0xff00ff88},   {1.0f, 1.0f, 1.0f, 0xff008888},
+    // Back face (0, 0, -1)
+    {{1, -1, -1}, {0, 0, -1}},
+    {{-1, -1, -1}, {0, 0, -1}},
+    {{-1, 1, -1}, {0, 0, -1}},
+    {{-1, 1, -1}, {0, 0, -1}},
+    {{1, 1, -1}, {0, 0, -1}},
+    {{1, -1, -1}, {0, 0, -1}},
 
+    // Left face (-1, 0, 0)
+    {{-1, -1, -1}, {-1, 0, 0}},
+    {{-1, -1, 1}, {-1, 0, 0}},
+    {{-1, 1, 1}, {-1, 0, 0}},
+    {{-1, 1, 1}, {-1, 0, 0}},
+    {{-1, 1, -1}, {-1, 0, 0}},
+    {{-1, -1, -1}, {-1, 0, 0}},
+
+    // Right face (1, 0, 0)
+    {{1, -1, 1}, {1, 0, 0}},
+    {{1, -1, -1}, {1, 0, 0}},
+    {{1, 1, -1}, {1, 0, 0}},
+    {{1, 1, -1}, {1, 0, 0}},
+    {{1, 1, 1}, {1, 0, 0}},
+    {{1, -1, 1}, {1, 0, 0}},
+
+    // Top face (0, 1, 0)
+    {{-1, 1, 1}, {0, 1, 0}},
+    {{1, 1, 1}, {0, 1, 0}},
+    {{1, 1, -1}, {0, 1, 0}},
+    {{1, 1, -1}, {0, 1, 0}},
+    {{-1, 1, -1}, {0, 1, 0}},
+    {{-1, 1, 1}, {0, 1, 0}},
+
+    // Bottom face (0, -1, 0)
+    {{-1, -1, -1}, {0, -1, 0}},
+    {{1, -1, -1}, {0, -1, 0}},
+    {{1, -1, 1}, {0, -1, 0}},
+    {{1, -1, 1}, {0, -1, 0}},
+    {{-1, -1, 1}, {0, -1, 0}},
+    {{-1, -1, -1}, {0, -1, 0}},
 };
 
-// indices for a cuboid
-const uint16_t triList[] = {
-    // front side
-    1,
-    4,
-    2,
-    1,
-    3,
-    4,
-    // left side
-    1,
-    5,
-    3,
-    3,
-    5,
-    7,
-    // right side
-    4,
-    8,
-    6,
-    4,
-    6,
-    2,
-    // top side
-    1,
-    6,
-    5,
-    1,
-    2,
-    6,
-    // bottom side
-    3,
-    8,
-    4,
-    3,
-    7,
-    8,
-    // back side
-    7,
-    5,
-    6,
-    7,
-    6,
-    8,
-
-};
-
-const bgfx::EmbeddedShader k_vs = BGFX_EMBEDDED_SHADER(v_simple);
-const bgfx::EmbeddedShader k_fs = BGFX_EMBEDDED_SHADER(f_simple);
+const bgfx::EmbeddedShader k_vs = BGFX_EMBEDDED_SHADER(v_lighting);
+const bgfx::EmbeddedShader k_fs = BGFX_EMBEDDED_SHADER(f_lighting);
 
 void CubeRenderer::Init(App *app) {
   this->app = app;
-  VertPosCol::init();
+  Vertex::init();
 
   cubeVbh = bgfx::createVertexBuffer(bgfx::makeRef(vertList, sizeof(vertList)),
-                                     VertPosCol::ms_decl);
-  cubeIbh = bgfx::createIndexBuffer(bgfx::makeRef(triList, sizeof(triList)));
+                                     Vertex::ms_decl);
   bgfx::ShaderHandle vsh =
-      bgfx::createEmbeddedShader(&k_vs, bgfx::getRendererType(), "v_simple");
+      bgfx::createEmbeddedShader(&k_vs, bgfx::getRendererType(), "v_lighting");
 
   bgfx::ShaderHandle fsh =
-      bgfx::createEmbeddedShader(&k_fs, bgfx::getRendererType(), "f_simple");
+      bgfx::createEmbeddedShader(&k_fs, bgfx::getRendererType(), "f_lighting");
 
   program = bgfx::createProgram(vsh, fsh, true);
+
+  u_baseCol = bgfx::createUniform("u_baseCol", bgfx::UniformType::Vec4);
+  u_lightDir = bgfx::createUniform("u_lightDir", bgfx::UniformType::Vec4);
+  bgfx::UniformHandle uniforms[2];
+
+  std::cout << bgfx::getShaderUniforms(fsh, uniforms, 2) << std::endl;
+  bgfx::UniformInfo info;
+  for (int i = 0; i < 2; i++) {
+    bgfx::getUniformInfo(uniforms[i], info);
+    std::cout << info.name << std::endl;
+  }
 
   int width, height;
   app->GetWindowDims(&width, &height);
@@ -148,14 +145,15 @@ void CubeRenderer::Init(App *app) {
 
 glm::mat4 ProjectionMatrix(float fovy, float aspect, float near, float far,
                            bool homogeneousDepth) {
-  return homogeneousDepth ? glm::perspectiveNO(fovy, aspect, near, far)
-                          : glm::perspectiveZO(fovy, aspect, near, far);
+  return homogeneousDepth
+             ? glm::perspectiveNO(glm::radians(fovy), aspect, near, far)
+             : glm::perspectiveZO(glm::radians(fovy), aspect, near, far);
 }
 
 void CubeRenderer::Update(float dt) {
 
   const glm::vec3 center = {0.0f, 0.0f, 0.0f};
-  const glm::vec3 eye = {0.0f, 0.75f, -2.0f};
+  const glm::vec3 eye = {0.0f, 1.5f, 10.0f};
   int width, height;
   if (!app->GetWindowDims(&width, &height)) {
     std::cout << SDL_GetError() << std::endl;
@@ -174,14 +172,19 @@ void CubeRenderer::Update(float dt) {
     // submit empty primitive
     bgfx::touch(0);
   }
+  const float lightDir[4] = {0.0f, 1.0f, 0.75f, 0.0f};
+  bgfx::setUniform(u_lightDir, lightDir);
 
   for (auto const &entity : mEntities) {
 
     auto &transform = app->coordinator.GetComponent<Transform>(entity);
     auto &cuboid = app->coordinator.GetComponent<Cuboid>(entity);
-    // TODO doesn't work
-    transform.rotation =
-        glm::rotate(transform.rotation, 40.0f * dt, {0.0f, 1.0f, 0.0f});
+    float baseCol[4] = {cuboid.color.x, cuboid.color.y, cuboid.color.z, 1.0f};
+    bgfx::setUniform(u_baseCol, baseCol);
+    transform.rotation = glm::rotate(
+        transform.rotation, glm::radians(40.0f) * dt, {0.0f, 1.0f, 0.0f});
+    // have to normalize!!
+    transform.rotation = glm::normalize(transform.rotation);
 
     glm::mat4 transformMat = glm::translate(glm::mat4(1), transform.position) *
                              glm::mat4_cast(transform.rotation) *
@@ -190,7 +193,6 @@ void CubeRenderer::Update(float dt) {
                              glm::scale(glm::mat4(1), cuboid.halfExtents);
     bgfx::setTransform(glm::value_ptr(transformMat));
     bgfx::setVertexBuffer(0, cubeVbh);
-    bgfx::setIndexBuffer(cubeIbh);
     bgfx::setState(BGFX_STATE_DEFAULT);
     bgfx::submit(0, program);
   }
