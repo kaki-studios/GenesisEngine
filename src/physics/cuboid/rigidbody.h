@@ -41,5 +41,5 @@ private:
   App *app;
 };
 
-Rigidbody CreateCuboidRB(glm::vec3 halfExtents, float density,
-                         glm::vec3 angularVelocity);
+Rigidbody CreateSB();
+Rigidbody CreateCuboidRB(glm::vec3 halfExtents, float density);
