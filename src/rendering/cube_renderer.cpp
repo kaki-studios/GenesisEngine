@@ -168,11 +168,6 @@ void CubeRenderer::Update() {
   auto &camera = app->coordinator.GetComponent<Camera>(cameraEntity);
   auto &transform = app->coordinator.GetComponent<Transform>(cameraEntity);
 
-  std::printf("Camera found: %f, %f, %f\n", transform.position.x,
-              transform.position.y, transform.position.z);
-  std::printf("rotation: %f, %f, %f, %f\n", transform.rotation.x,
-              transform.rotation.y, transform.rotation.z, transform.rotation.w);
-
   const glm::vec3 center = {0.0f, 0.0f, 0.0f};
   const glm::vec3 eye = {0.0f, 1.5f, 10.0f};
   int width, height;
@@ -237,4 +232,12 @@ ECS::Entity CameraRetriever::GetCamera() {
                                             .farPlane = 0.1f,
                                         });
   return camera;
+}
+
+CubeRenderer::~CubeRenderer() {
+  bgfx::destroy(program);
+  bgfx::destroy(cubeVbh);
+  bgfx::destroy(u_baseCol);
+  bgfx::destroy(u_lightDir);
+  std::cout << "destroyed" << std::endl;
 }

@@ -25,6 +25,7 @@ public:
   CubeRenderer() = default;
   void Update();
   void Init(App *app);
+  ~CubeRenderer();
 
 private:
   App *app;

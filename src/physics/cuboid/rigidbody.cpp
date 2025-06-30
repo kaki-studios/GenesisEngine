@@ -85,16 +85,40 @@ void RigidbodySystem::Init(App *app) {
   app->coordinator.SetSystemSignature<RigidbodySystem>(signature);
 }
 
-const int NUM_SUBSTEPS = 2;
-const int NUM_POS_ITERS = 10;
+const int NUM_SUBSTEPS = 20;
+const int NUM_POS_ITERS = 1;
 
 void RigidbodySystem::Update(double dt) {
   // collect collisions
+  for (auto &entity : mEntities) {
+    auto &t = app->coordinator.GetComponent<Transform>(entity);
+    t.rotation = glm::normalize(t.rotation);
+  }
   std::vector<CollisionInfo> collisions =
       CollectCollisionPairs(mEntities, &app->coordinator);
-  // if (collisions.size()) {
-  //   std::cout << collisions.size() << std::endl;
-  // }
+  if (collisions.size()) {
+    std::cout << collisions.size() << std::endl;
+  }
+  for (auto &collision : collisions) {
+    auto &rb1 = app->coordinator.GetComponent<Rigidbody>(collision.bodyA);
+    auto &t1 = app->coordinator.GetComponent<Transform>(collision.bodyA);
+    auto &rb2 = app->coordinator.GetComponent<Rigidbody>(collision.bodyB);
+    auto &t2 = app->coordinator.GetComponent<Transform>(collision.bodyB);
+    glm::vec3 r1 = collision.contact - t1.position;
+    glm::vec3 r2 = collision.contact - t2.position;
+    collision.p1 = t1.position + glm::mat3_cast(t1.rotation) * r1;
+    collision.p2 = t2.position + glm::mat3_cast(t2.rotation) * r2;
+
+    collision.p1hat = rb1.prevPosition + glm::mat3_cast(rb1.prevRotation) * r1;
+    collision.p2hat = rb2.prevPosition + glm::mat3_cast(rb2.prevRotation) * r1;
+
+    // collision.penetration =
+    //     glm::dot(collision.p2 - collision.p1, collision.normal);
+
+    std::cout << "penetration: " << collision.penetration << std::endl;
+    std::cout << "bodyA: " << collision.bodyA << "\n";
+    std::cout << "bodyB: " << collision.bodyB << "\n";
+  }
   double h = dt / NUM_SUBSTEPS;
   for (int i = 0; i < NUM_SUBSTEPS; i++) {
     for (auto &entity : mEntities) {
@@ -144,6 +168,9 @@ void RigidbodySystem::Update(double dt) {
       rb.angularVelocity = 2.0f * glm::vec3(dq.x, dq.y, dq.z) * float(1.0 / h);
 
       rb.angularVelocity = dq.w >= 0 ? rb.angularVelocity : -rb.angularVelocity;
+      // std::printf("entity %d position: %f,%f,%f\n", entity,
+      //             transform.position.x, transform.position.y,
+      //             transform.position.z);
     }
     for (auto &collision : collisions) {
       SolveVelocities(collision, &app->coordinator, h);

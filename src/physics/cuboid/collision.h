@@ -25,6 +25,12 @@ struct CollisionInfo {
   float penetration;
 
   float lagrangeMultiplier; // lambda
+  //
+  glm::vec3 p1;
+  glm::vec3 p2;
+
+  glm::vec3 p1hat;
+  glm::vec3 p2hat;
 };
 
 // caller must ensure that all entites have the following components:

@@ -8,7 +8,6 @@
 #include <glm/gtc/quaternion.hpp>
 #include <glm/trigonometric.hpp>
 #include <glm/vec3.hpp>
-#include <iostream>
 
 float wrapFloat(float value, float min, float max) {
   float range = max - min;
@@ -41,16 +40,12 @@ void CameraSystem::Update(float dt) {
 
     transform.rotation = glm::angleAxis(camera.yaw, glm::vec3(0, 1, 0)) *
                          glm::angleAxis(camera.pitch, glm::vec3(1, 0, 0));
-    std::cout << "yaw: " << camera.yaw << std::endl;
-    std::cout << "pitch: " << camera.pitch << std::endl;
 
     // movement
     glm::vec3 forwardXZ =
         glm::angleAxis(camera.yaw, glm::vec3(0, 1, 0)) * glm::vec3(0, 0, -1);
     forwardXZ.y = 0;
     forwardXZ = glm::normalize(forwardXZ);
-    std::cout << "forwardXZ: " << forwardXZ.x << ", " << forwardXZ.z
-              << std::endl;
     glm::vec3 rightXZ =
         glm::normalize(glm::cross(forwardXZ, glm::vec3(0, 1, 0)));
 

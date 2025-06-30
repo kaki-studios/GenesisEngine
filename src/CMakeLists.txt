@@ -5,6 +5,9 @@ file(GLOB PUBLIC_HEADERS CONFIGURE_DEPENDS "include/*.h")
 # Create library
 add_library(EngineLib STATIC ${SOURCES} ${PUBLIC_HEADERS})
 
+
+
+
 target_include_directories(EngineLib PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
@@ -12,7 +15,6 @@ target_include_directories(EngineLib PUBLIC
 
 
 
-# Set include directories
 target_include_directories(EngineLib PRIVATE 
     ${CMAKE_CURRENT_SOURCE_DIR}
     $<TARGET_PROPERTY:bgfx,INTERFACE_INCLUDE_DIRECTORIES>
@@ -20,6 +22,10 @@ target_include_directories(EngineLib PRIVATE
     $<TARGET_PROPERTY:bimg,INTERFACE_INCLUDE_DIRECTORIES>
     # $<TARGET_PROPERTY:SDL3,INTERFACE_INCLUDE_DIRECTORIES>
 )
+
+
+
+
 #wayland fuckery
 if(UNIX AND NOT APPLE)
   find_package(ECM REQUIRED)
@@ -29,6 +35,11 @@ if(UNIX AND NOT APPLE)
   target_link_libraries(EngineLib PRIVATE Wayland::Client)
 endif()
 
+
+
+
+
+
 # Link dependencies
 target_link_libraries(EngineLib PUBLIC 
     bgfx
@@ -37,6 +48,7 @@ target_link_libraries(EngineLib PUBLIC
     SDL3
     glm
 )
+
 
 
 

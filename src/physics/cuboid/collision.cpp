@@ -8,6 +8,7 @@
 #include "glm/matrix.hpp"
 #include "rigidbody.h"
 #include <ECS.h>
+#include <cstdio>
 #include <iostream>
 #include <set>
 #include <vector>
@@ -107,6 +108,13 @@ CollisionInfo SAT(OBB o1, OBB o2) {
   info.normal = glm::vec3(0.0f);
   info.contact = glm::vec3(0.0f);
 
+  // if (glm::length(o1.rotation) != 1.0f) {
+  //   std::printf("o1 rotation: %f\n", glm::length(o1.rotation));
+  // }
+  // if (glm::length(o2.rotation) != 1.0f) {
+  //   std::printf("o2 rotation: %f\n", glm::length(o2.rotation));
+  // }
+
   // Get all potential separating axes
   std::vector<glm::vec3> axes1 = getOBBAxes(o1);
   std::vector<glm::vec3> axes2 = getOBBAxes(o2);
@@ -151,6 +159,9 @@ CollisionInfo SAT(OBB o1, OBB o2) {
     // Calculate overlap
     float overlap = getOverlap(proj1, proj2);
 
+    // if (overlap > 100.0f) {
+    //   std::cout << "something wrong" << std::endl;
+    // }
     if (overlap < minOverlap) {
       minOverlap = overlap;
       separatingAxis = normalizedAxis;
@@ -184,8 +195,14 @@ CollectCollisionPairs(std::set<ECS::Entity> entities,
       ECS::Entity e2 = *j;
       auto &t1 = coordinator->GetComponent<Transform>(e1);
       auto &c1 = coordinator->GetComponent<Cuboid>(e1);
+      auto &rb1 = coordinator->GetComponent<Rigidbody>(e1);
       auto &t2 = coordinator->GetComponent<Transform>(e2);
       auto &c2 = coordinator->GetComponent<Cuboid>(e2);
+      auto &rb2 = coordinator->GetComponent<Rigidbody>(e2);
+
+      if (rb1.invMass == 0 && rb2.invMass == 0) {
+        continue;
+      }
 
       OBB o1 = OBB(t1.position, t1.rotation, c1.halfExtents);
       OBB o2 = OBB(t2.position, t2.rotation, c2.halfExtents);
@@ -194,6 +211,7 @@ CollectCollisionPairs(std::set<ECS::Entity> entities,
       }
       CollisionInfo result = SAT(o1, o2);
       if (result.penetration > 0) {
+
         result.bodyA = e1;
         result.bodyB = e2;
         result.lagrangeMultiplier = 0.0f;
@@ -246,6 +264,7 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
   float dl =
       -(collisionInfo.penetration + aHat * collisionInfo.lagrangeMultiplier) /
       (gim1 + gim2 + aHat);
+  std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
 
   glm::vec3 positionalImpulse = dl * collisionInfo.normal;
@@ -304,8 +323,7 @@ void SolveVelocities(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
 
   glm::mat3 R1 = glm::mat3_cast(t1.rotation);
   glm::mat3 globalInvInertia1 = R1 * rb1.invInertia * glm::transpose(R1);
-  if (glm::length(deltaV) < glm::epsilon<float>()) {
-    std::cout << "deltaV is zero" << std::endl;
+  if (glm::length(deltaV) < 1e-5f) {
     return;
   }
 

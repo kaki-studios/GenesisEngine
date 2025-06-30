@@ -150,6 +150,9 @@ int main(void) {
 
     bgfx::frame();
   }
+  // rbSystem.reset();
+  // cameraSystem.reset();
+  // cubeRenderer.reset();
   std::cout << "Out" << std::endl;
 
   return 0;

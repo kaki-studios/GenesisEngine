@@ -15,16 +15,14 @@ endif()
 # Force all subprojects to use the same build type
 set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING "Build type" FORCE)
 
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-  # For bgfx.cmake specifically
-  set(BGFX_CONFIG_DEBUG ON)
-  set(_DEBUG ON)
-endif()
-
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
   # For bgfx.cmake specifically
   set(BGFX_CONFIG_DEBUG OFF)
   set(NDEBUG ON)
+endif()
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  set(NDEBUG OFF)
 endif()
 
 
