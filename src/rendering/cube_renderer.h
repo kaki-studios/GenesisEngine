@@ -1,5 +1,4 @@
 #include "../core/app.h"
-#include "ECS.h"
 #include "glm/fwd.hpp"
 #include <bgfx/bgfx.h>
 #include <glm/common.hpp>
@@ -13,6 +12,12 @@ struct Transform {
 struct Cuboid {
   glm::vec3 halfExtents;
   glm::vec3 color;
+};
+
+class CameraRetriever : public ECS::System {
+public:
+  ECS::Entity GetCamera();
+  App *app;
 };
 
 class CubeRenderer : public ECS::System {
@@ -30,4 +35,6 @@ private:
 
   bgfx::UniformHandle u_baseCol;
   bgfx::UniformHandle u_lightDir;
+
+  std::shared_ptr<CameraRetriever> retriever;
 };

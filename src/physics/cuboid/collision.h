@@ -35,3 +35,5 @@ std::vector<CollisionInfo> CollectCollisionPairs(std::set<ECS::Entity> entities,
                                                  ECS::Coordinator *coordinator);
 void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
                     float h);
+void SolveVelocities(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
+                     float h);

@@ -1,8 +1,8 @@
 #include "app.h"
-#include "Engine.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
+#include <SDL3/SDL_mouse.h>
 #include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
@@ -24,6 +24,9 @@ App::App(int width, int height) {
   SDL_Window *window =
       SDL_CreateWindow("TEST TITLE", width, height,
                        SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE);
+
+  // make function for this
+  SDL_SetWindowRelativeMouseMode(window, true);
   this->window = window;
   if (!window) {
     SDL_Quit();
@@ -47,21 +50,60 @@ App::~App() {
 
 bool App::ShouldClose() { return quit; }
 void App::Update() {
+  inputState.mouseDeltaX = 0;
+  inputState.mouseDeltaY = 0;
+  inputState.scrollX = 0;
+  inputState.scrollY = 0;
+
   while (SDL_PollEvent(&this->currentEvent)) {
     switch (currentEvent.type) {
-    case SDL_EVENT_QUIT:
+    case SDL_EVENT_QUIT: {
+
       std::cerr << "quitting" << std::endl;
       quit = true;
       break;
-    case SDL_EVENT_WINDOW_RESIZED:
+    }
+    case SDL_EVENT_WINDOW_RESIZED: {
+
       int newWidth = currentEvent.window.data1;
       int newHeight = currentEvent.window.data2;
 
       // Update bgfx backbuffer size
       bgfx::reset((uint32_t)newWidth, (uint32_t)newHeight, BGFX_RESET_VSYNC);
+      break;
+    }
+    case SDL_EVENT_KEY_DOWN: {
+      inputState.keysDown[currentEvent.key.key] = true;
+      break;
+    }
+    case SDL_EVENT_KEY_UP: {
+      inputState.keysDown[currentEvent.key.key] = false;
+      break;
+    }
+    case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+      inputState.mouseButtonsDown[currentEvent.button.button] = true;
+      break;
+    }
+    case SDL_EVENT_MOUSE_BUTTON_UP: {
+      inputState.mouseButtonsDown[currentEvent.button.button] = false;
+      break;
+    }
+    case SDL_EVENT_MOUSE_MOTION: {
+      inputState.mouseX = currentEvent.motion.x;
+      inputState.mouseY = currentEvent.motion.y;
+      inputState.mouseDeltaX = currentEvent.motion.xrel;
+      inputState.mouseDeltaY = currentEvent.motion.yrel;
+      break;
+    }
+    case SDL_EVENT_MOUSE_WHEEL: {
+      inputState.scrollX = currentEvent.wheel.x;
+      inputState.scrollY = currentEvent.wheel.y;
+      break;
+    }
     };
   }
 }
+
 bool App::GetWindowDims(int *width, int *height) {
   return SDL_GetWindowSize(this->window, width, height);
 }

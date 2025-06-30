@@ -1,14 +1,18 @@
 #include "cube_renderer.h"
 #include "bgfx/embedded_shader.h"
+#include "camera.h"
+#include "ecs/entity_manager.h"
 #include "glm/trigonometric.hpp"
 #include <../ecs/system.h>
 #include <bgfx/bgfx.h>
 #include <bgfx/defines.h>
+#include <cstdio>
 #include <glm/ext/matrix_clip_space.hpp>
 #include <glm/ext/matrix_transform.hpp>
 #include <glm/fwd.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <iomanip>
 #include <iostream>
 
 // shader hell TODO move to a macro
@@ -129,9 +133,16 @@ void CubeRenderer::Init(App *app) {
                      0);
 
   ECS::Signature signature;
-  signature.set(app->coordinator.GetComponentType<Transform>());
-  signature.set(app->coordinator.GetComponentType<Cuboid>());
+  signature.set(app->coordinator.GetComponentType<Transform>(), true);
+  signature.set(app->coordinator.GetComponentType<Cuboid>(), true);
   app->coordinator.SetSystemSignature<CubeRenderer>(signature);
+
+  retriever = app->coordinator.RegisterSystem<CameraRetriever>();
+  retriever->app = app;
+  ECS::Signature sig;
+  sig.set(app->coordinator.GetComponentType<Transform>(), true);
+  sig.set(app->coordinator.GetComponentType<Camera>(), true);
+  app->coordinator.SetSystemSignature<CameraRetriever>(sig);
 }
 
 glm::mat4 ProjectionMatrix(float fovy, float aspect, float near, float far,
@@ -141,7 +152,26 @@ glm::mat4 ProjectionMatrix(float fovy, float aspect, float near, float far,
              : glm::perspectiveZO(glm::radians(fovy), aspect, near, far);
 }
 
+void print_mat4(const glm::mat4 &mat) {
+  std::cout << std::fixed << std::setprecision(3);
+  for (int row = 0; row < 4; ++row) {
+    std::cout << "[ ";
+    for (int col = 0; col < 4; ++col) {
+      std::cout << std::setw(8) << mat[col][row] << " ";
+    }
+    std::cout << "]\n";
+  }
+}
+
 void CubeRenderer::Update() {
+  ECS::Entity cameraEntity = retriever->GetCamera();
+  auto &camera = app->coordinator.GetComponent<Camera>(cameraEntity);
+  auto &transform = app->coordinator.GetComponent<Transform>(cameraEntity);
+
+  std::printf("Camera found: %f, %f, %f\n", transform.position.x,
+              transform.position.y, transform.position.z);
+  std::printf("rotation: %f, %f, %f, %f\n", transform.rotation.x,
+              transform.rotation.y, transform.rotation.z, transform.rotation.w);
 
   const glm::vec3 center = {0.0f, 0.0f, 0.0f};
   const glm::vec3 eye = {0.0f, 1.5f, 10.0f};
@@ -149,10 +179,14 @@ void CubeRenderer::Update() {
   if (!app->GetWindowDims(&width, &height)) {
     std::cout << SDL_GetError() << std::endl;
   }
-  glm::mat4 projection =
-      ProjectionMatrix(60.0f, float(width) / float(height), 0.1f, 100.0f,
-                       bgfx::getCaps()->homogeneousDepth);
-  glm::mat4 view = glm::lookAt(eye, center, glm::vec3(0.0f, 1.0f, 0.0f));
+
+  glm::mat4 projection = ProjectionMatrix(
+      camera.fov, float(width) / float(height), camera.nearPlane,
+      camera.farPlane, bgfx::getCaps()->homogeneousDepth);
+
+  glm::mat4 transformCam = glm::translate(glm::mat4(1), transform.position) *
+                           glm::mat4_cast(transform.rotation);
+  glm::mat4 view = glm::inverse(transformCam);
 
   bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x443355FF, 1.0f,
                      0);
@@ -182,4 +216,25 @@ void CubeRenderer::Update() {
     bgfx::setState(BGFX_STATE_DEFAULT);
     bgfx::submit(0, program);
   }
+}
+
+ECS::Entity CameraRetriever::GetCamera() {
+  for (auto &entity : mEntities) {
+    return entity;
+  }
+  std::cout << "No camera found!" << std::endl;
+  std::cout << "Creating default camera" << std::endl;
+  ECS::Entity camera = app->coordinator.CreateEntity();
+  app->coordinator.AddComponent(camera,
+                                Transform{
+                                    .position = glm::vec3(0.0, 1.5, 10.0),
+                                    .rotation = glm::identity<glm::quat>(),
+                                });
+  app->coordinator.AddComponent(camera, Camera{
+                                            .fov = 60.0f,
+                                            .moveSpeed = 5.0f,
+                                            .nearPlane = 0.1f,
+                                            .farPlane = 0.1f,
+                                        });
+  return camera;
 }

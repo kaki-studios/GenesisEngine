@@ -7,7 +7,9 @@
 #include "glm/gtc/quaternion.hpp"
 #include "glm/matrix.hpp"
 #include "rendering/cube_renderer.h"
+#include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 #include <iterator>
 #include <vector>
@@ -46,8 +48,8 @@ Rigidbody CreateSB() {
       .angularVelocity = glm::vec3(0),
       .extForce = glm::vec3(0),
       .invInertia = glm::mat3(0),
-      .restitution = 0.0f,
-      .friction = 1.0f,
+      .restitution = 0.5f,
+      .friction = 0.5f,
   };
 }
 
@@ -68,8 +70,8 @@ Rigidbody CreateCuboidRB(glm::vec3 halfExtents, float density) {
       .extForce = glm::vec3(0),
       .extTorque = glm::vec3(0),
       .invInertia = invInertia,
-      .restitution = 0.0f,
-      .friction = 0.0f,
+      .restitution = 0.5f,
+      .friction = 0.5f,
   };
 }
 
@@ -84,15 +86,15 @@ void RigidbodySystem::Init(App *app) {
 }
 
 const int NUM_SUBSTEPS = 2;
-const int NUM_POS_ITERS = 2;
+const int NUM_POS_ITERS = 10;
 
 void RigidbodySystem::Update(double dt) {
   // collect collisions
   std::vector<CollisionInfo> collisions =
       CollectCollisionPairs(mEntities, &app->coordinator);
-  if (collisions.size()) {
-    std::cout << collisions.size() << std::endl;
-  }
+  // if (collisions.size()) {
+  //   std::cout << collisions.size() << std::endl;
+  // }
   double h = dt / NUM_SUBSTEPS;
   for (int i = 0; i < NUM_SUBSTEPS; i++) {
     for (auto &entity : mEntities) {
@@ -143,6 +145,8 @@ void RigidbodySystem::Update(double dt) {
 
       rb.angularVelocity = dq.w >= 0 ? rb.angularVelocity : -rb.angularVelocity;
     }
-    // solve velocities here
+    for (auto &collision : collisions) {
+      SolveVelocities(collision, &app->coordinator, h);
+    }
   }
 }

@@ -1,8 +1,10 @@
 #pragma once
 #include "component_manager.h"
 #include "entity_manager.h"
+#include "system.h"
 #include "system_manager.h"
 #include <memory>
+#include <type_traits>
 namespace ECS {
 class Coordinator {
 public:
@@ -39,6 +41,9 @@ public:
   }
   // generic system methods
   template <typename T> std::shared_ptr<T> RegisterSystem() {
+    // static asserts are always good
+    static_assert(std::is_base_of<System, T>::value,
+                  "T must derive from ECS::System");
     return mSystemManager->RegisterSystem<T>();
   }
   template <typename T> void SetSystemSignature(Signature signature) {

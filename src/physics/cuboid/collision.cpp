@@ -1,6 +1,8 @@
 #include "collision.h"
 #include "../../rendering/cube_renderer.h"
 #include "ecs/entity_manager.h"
+#include "glm/common.hpp"
+#include "glm/ext/scalar_constants.hpp"
 #include "glm/geometric.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/matrix.hpp"
@@ -184,6 +186,7 @@ CollectCollisionPairs(std::set<ECS::Entity> entities,
       auto &c1 = coordinator->GetComponent<Cuboid>(e1);
       auto &t2 = coordinator->GetComponent<Transform>(e2);
       auto &c2 = coordinator->GetComponent<Cuboid>(e2);
+
       OBB o1 = OBB(t1.position, t1.rotation, c1.halfExtents);
       OBB o2 = OBB(t2.position, t2.rotation, c2.halfExtents);
       if (!BroadPhaseIsColliding(o1, o2)) {
@@ -213,6 +216,9 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
   auto &rb2 = coordinator->GetComponent<Rigidbody>(e2);
   auto &t1 = coordinator->GetComponent<Transform>(e1);
   auto &t2 = coordinator->GetComponent<Transform>(e2);
+  if (rb1.invMass == 0 && rb2.invMass == 0) {
+    return;
+  }
 
   glm::vec3 r1 = collisionInfo.contact - t1.position;
   glm::vec3 r2 = collisionInfo.contact - t2.position;
@@ -232,10 +238,13 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
                                       globalInvInertia2 *
                                           glm::cross(r2, collisionInfo.normal));
 
+  if (gim1 == 0 && gim2 == 0) {
+    return;
+  }
   // lagrangeMultiplier updates
   float aHat = COLLISION_COMPLIANCE / (h * h);
   float dl =
-      (-collisionInfo.penetration - aHat * collisionInfo.lagrangeMultiplier) /
+      -(collisionInfo.penetration + aHat * collisionInfo.lagrangeMultiplier) /
       (gim1 + gim2 + aHat);
   collisionInfo.lagrangeMultiplier += dl;
 
@@ -256,6 +265,69 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
   // idk what to do with this (maybe store??)
   glm::vec3 collisionForce =
       collisionInfo.lagrangeMultiplier * (collisionInfo.normal / (h * h));
-  std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
-            << " and penetration: " << collisionInfo.penetration << std::endl;
+  // std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
+  //           << " and penetration: " << collisionInfo.penetration <<
+  //           std::endl;
+}
+
+void SolveVelocities(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
+                     float h) {
+  auto &rb1 = coordinator->GetComponent<Rigidbody>(collisionInfo.bodyA);
+  auto &t1 = coordinator->GetComponent<Transform>(collisionInfo.bodyA);
+  auto &rb2 = coordinator->GetComponent<Rigidbody>(collisionInfo.bodyB);
+  auto &t2 = coordinator->GetComponent<Transform>(collisionInfo.bodyB);
+
+  if (rb1.invMass == 0 && rb2.invMass == 0) {
+    return;
+  }
+
+  glm::vec3 r1 = collisionInfo.contact - t1.position;
+  glm::vec3 r2 = collisionInfo.contact - t2.position;
+
+  glm::vec3 v = (rb1.linearVelocity + glm::cross(rb1.angularVelocity, r1)) -
+                (rb2.linearVelocity + glm::cross(rb2.angularVelocity, r2));
+  float vn = glm::dot(collisionInfo.normal, v);
+  glm::vec3 vt = v - collisionInfo.normal * vn;
+
+  float friction = (rb1.friction + rb2.friction) / 2;
+  glm::vec3 fn =
+      (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
+
+  if (glm::length(vt) < 1e-6f) {
+    std::cout << "really small tangential velocity" << std::endl;
+    return;
+  }
+
+  glm::vec3 deltaV = -(glm::normalize(vt)) *
+                     glm::min(h * friction * glm::length(fn), glm::length(vt));
+  // maybe apply damping
+
+  glm::mat3 R1 = glm::mat3_cast(t1.rotation);
+  glm::mat3 globalInvInertia1 = R1 * rb1.invInertia * glm::transpose(R1);
+  if (glm::length(deltaV) < glm::epsilon<float>()) {
+    std::cout << "deltaV is zero" << std::endl;
+    return;
+  }
+
+  glm::vec3 dir = glm::normalize(deltaV);
+
+  float gim1 = rb1.invMass + glm::dot(glm::cross(r1, dir),
+                                      globalInvInertia1 * glm::cross(r1, dir));
+
+  glm::mat3 R2 = glm::mat3_cast(t2.rotation);
+  glm::mat3 globalInvInertia2 = R2 * rb2.invInertia * glm::transpose(R2);
+
+  float gim2 = rb2.invMass + glm::dot(glm::cross(r2, dir),
+                                      globalInvInertia2 * glm::cross(r2, dir));
+  if (gim1 == 0 && gim2 == 0) {
+    return;
+  }
+
+  glm::vec3 p = deltaV / (gim1 + gim2);
+
+  rb1.linearVelocity += p * rb1.invMass;
+  rb2.linearVelocity -= p * rb2.invMass;
+
+  rb1.angularVelocity += globalInvInertia1 * glm::cross(r1, p);
+  rb2.angularVelocity -= globalInvInertia2 * glm::cross(r2, p);
 }
