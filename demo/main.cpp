@@ -10,7 +10,9 @@
 #include <Physics.h>
 #include <Rendering.h>
 #include <SDL3/SDL.h>
+#include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_mouse.h>
 #include <SDL3/SDL_timer.h>
 #include <array>
 #include <bgfx/bgfx.h>
@@ -141,7 +143,10 @@ int main(void) {
     app.Update();
     accumulator += deltaTime;
     while (accumulator >= H) {
-      rbSystem->Update(H);
+      InputState state = app.GetInputState();
+      if (!state.mouseButtonsDown[SDL_BUTTON_LEFT]) {
+        rbSystem->Update(H);
+      }
       accumulator -= H;
     }
 

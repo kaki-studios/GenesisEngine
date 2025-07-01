@@ -2,11 +2,13 @@
 // https://matthias-research.github.io/pages/publications/PBDBodies.pdf
 
 #include "../core/app.h"
+#include "../debug_collisions.h"
 #include "../ecs/system.h"
 #include "glm/fwd.hpp"
 #include <glm/common.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
+#include <memory>
 
 struct Rigidbody {
   // these are already in Transform
@@ -39,6 +41,7 @@ public:
 
 private:
   App *app;
+  std::shared_ptr<DebugCollisions> debug;
 };
 
 Rigidbody CreateSB();

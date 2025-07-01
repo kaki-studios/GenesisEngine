@@ -1,4 +1,5 @@
 #include "app.h"
+
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_init.h>
@@ -6,6 +7,7 @@
 #include <SDL3/SDL_oldnames.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
+// #include <imgui.h>
 #include <iostream>
 #include <platform/integration.h>
 
@@ -24,6 +26,8 @@ App::App(int width, int height) {
   SDL_Window *window =
       SDL_CreateWindow("TEST TITLE", width, height,
                        SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE);
+  // ImGuiContext *ctx = ImGui::CreateContext();
+  // std::cout << "context is " << ctx << std::endl;
 
   // make function for this
   SDL_SetWindowRelativeMouseMode(window, true);
@@ -42,6 +46,8 @@ App::App(int width, int height) {
 }
 
 App::~App() {
+
+  coordinator.FreeSystems();
   bgfx::shutdown();
   if (window)
     SDL_DestroyWindow(window);

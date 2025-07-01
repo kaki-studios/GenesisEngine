@@ -20,6 +20,8 @@ target_include_directories(EngineLib PRIVATE
     $<TARGET_PROPERTY:bgfx,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:bx,INTERFACE_INCLUDE_DIRECTORIES>
     $<TARGET_PROPERTY:bimg,INTERFACE_INCLUDE_DIRECTORIES>
+    $<TARGET_PROPERTY:imgui,INTERFACE_INCLUDE_DIRECTORIES>
+    # $<TARGET_PROPERTY:imgui_headers,INTERFACE_INCLUDE_DIRECTORIES>
     # $<TARGET_PROPERTY:SDL3,INTERFACE_INCLUDE_DIRECTORIES>
 )
 
@@ -40,6 +42,7 @@ endif()
 
 
 
+
 # Link dependencies
 target_link_libraries(EngineLib PUBLIC 
     bgfx
@@ -47,6 +50,7 @@ target_link_libraries(EngineLib PUBLIC
     bimg
     SDL3
     glm
+    imgui
 )
 
 

@@ -77,11 +77,13 @@ Rigidbody CreateCuboidRB(glm::vec3 halfExtents, float density) {
 
 void RigidbodySystem::Init(App *app) {
   this->app = app;
+  this->debug = app->coordinator.RegisterSystem<DebugCollisions>();
+  debug->Init(&app->coordinator);
 
   ECS::Signature signature;
-  signature.set(app->coordinator.GetComponentType<Transform>());
-  signature.set(app->coordinator.GetComponentType<Rigidbody>());
-  signature.set(app->coordinator.GetComponentType<Cuboid>());
+  signature.set(app->coordinator.GetComponentType<Transform>(), true);
+  signature.set(app->coordinator.GetComponentType<Rigidbody>(), true);
+  signature.set(app->coordinator.GetComponentType<Cuboid>(), true);
   app->coordinator.SetSystemSignature<RigidbodySystem>(signature);
 }
 
@@ -89,6 +91,7 @@ const int NUM_SUBSTEPS = 20;
 const int NUM_POS_ITERS = 1;
 
 void RigidbodySystem::Update(double dt) {
+  debug->ClearCollisions();
   // collect collisions
   for (auto &entity : mEntities) {
     auto &t = app->coordinator.GetComponent<Transform>(entity);
@@ -155,6 +158,23 @@ void RigidbodySystem::Update(double dt) {
     }
     for (int i = 0; i < NUM_POS_ITERS; i++) {
       for (auto &collisionInfo : collisions) {
+        ECS::Entity bodyA = collisionInfo.bodyA;
+        ECS::Entity bodyB = collisionInfo.bodyB;
+
+        auto &t1 =
+            app->coordinator.GetComponent<Transform>(collisionInfo.bodyA);
+        auto &c1 = app->coordinator.GetComponent<Cuboid>(collisionInfo.bodyA);
+        auto &t2 =
+            app->coordinator.GetComponent<Transform>(collisionInfo.bodyB);
+        auto &c2 = app->coordinator.GetComponent<Cuboid>(collisionInfo.bodyB);
+        OBB o1 = OBB(t1.position, t1.rotation, c1.halfExtents);
+        OBB o2 = OBB(t2.position, t2.rotation, c2.halfExtents);
+        collisionInfo = SAT(o1, o2);
+        collisionInfo.bodyA = bodyA;
+        collisionInfo.bodyB = bodyB;
+        std::cout << "collision penetration: " << collisionInfo.penetration
+                  << std::endl;
+
         SolvePositions(collisionInfo, &app->coordinator, h);
       }
     }
@@ -175,5 +195,6 @@ void RigidbodySystem::Update(double dt) {
     for (auto &collision : collisions) {
       SolveVelocities(collision, &app->coordinator, h);
     }
+    debug->SetCollisions(collisions);
   }
 }

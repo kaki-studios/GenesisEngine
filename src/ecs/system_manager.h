@@ -24,6 +24,7 @@ public:
   // non generic methods
   void EntityDestroyed(Entity entity);
   void EntitySignatureChanged(Entity entity, Signature entitySignature);
+  void FreeSystems();
 
 private:
   // Map from system type string pointer to a signature

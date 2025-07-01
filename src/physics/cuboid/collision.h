@@ -1,12 +1,13 @@
+#include "../ecs/coordinator.h"
+#include "../ecs/entity_manager.h"
 #include "../include/ECS.h"
-#include "ecs/coordinator.h"
-#include "ecs/entity_manager.h"
 #include "glm/ext/quaternion_float.hpp"
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
 #include <vector>
 
 // Oriented bounding box
+#pragma once
 struct OBB {
   glm::vec3 position;
   glm::quat rotation;
@@ -32,6 +33,8 @@ struct CollisionInfo {
   glm::vec3 p1hat;
   glm::vec3 p2hat;
 };
+
+CollisionInfo SAT(OBB o1, OBB o2);
 
 // caller must ensure that all entites have the following components:
 // Transform

@@ -23,4 +23,11 @@ void SystemManager::EntitySignatureChanged(Entity entity,
     }
   }
 }
+
+void SystemManager::FreeSystems() {
+  for (auto &system : mSystems) {
+    system.second.reset();
+  }
+}
+
 } // namespace ECS

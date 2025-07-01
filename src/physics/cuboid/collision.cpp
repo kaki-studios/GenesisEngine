@@ -257,6 +257,7 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
                                           glm::cross(r2, collisionInfo.normal));
 
   if (gim1 == 0 && gim2 == 0) {
+    std::cout << "total inverse mass == 0\n";
     return;
   }
   // lagrangeMultiplier updates
@@ -284,9 +285,8 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
   // idk what to do with this (maybe store??)
   glm::vec3 collisionForce =
       collisionInfo.lagrangeMultiplier * (collisionInfo.normal / (h * h));
-  // std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
-  //           << " and penetration: " << collisionInfo.penetration <<
-  //           std::endl;
+  std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
+            << " and penetration: " << collisionInfo.penetration << std::endl;
 }
 
 void SolveVelocities(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,

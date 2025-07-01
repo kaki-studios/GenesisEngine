@@ -10,7 +10,9 @@ class Coordinator {
 public:
   void Init();
   Entity CreateEntity();
+  Signature GetEntitySignature(Entity entity);
   void DestroyEntity(Entity entity);
+  void FreeSystems();
   // generic component methods
   template <typename T> void RegisterComponent() {
     mComponentManager->RegisterComponent<T>();

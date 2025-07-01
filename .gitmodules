@@ -10,3 +10,12 @@
 [submodule "lib/SDL"]
 	path = lib/SDL
 	url = https://github.com/libsdl-org/SDL.git
+[submodule "lib/imgui"]
+	path = lib/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "lib/imgui_custom/imgui"]
+	path = lib/imgui_custom/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "lib/imgui.cmake/imgui"]
+	path = lib/imgui.cmake/imgui
+	url = https://github.com/ocornut/imgui.git
