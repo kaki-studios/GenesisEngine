@@ -174,7 +174,7 @@ CollisionInfo SAT(OBB o1, OBB o2) {
     }
   }
 
-  if (collision) {
+  if (collision && minOverlap != std::numeric_limits<float>::max()){
     info.penetration = minOverlap * 0.5f;
     info.normal = separatingAxis;
     info.contact = findContactPoint(o1, o2, separatingAxis, minOverlap);
@@ -267,6 +267,7 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
       (gim1 + gim2 + aHat);
   std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
+  std::cout << "lambda" << collisionInfo.lagrangeMultiplier << "\n";
 
   glm::vec3 positionalImpulse = dl * collisionInfo.normal;
 

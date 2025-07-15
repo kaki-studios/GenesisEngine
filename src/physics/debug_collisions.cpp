@@ -29,16 +29,18 @@ void DebugCollisions::Init(ECS::Coordinator *coordinator) {
 void DebugCollisions::SetCollisions(std::vector<CollisionInfo> collisions) {
   for (auto &collision : collisions) {
     ECS::Entity entity = coordinator->CreateEntity();
+    const float strecthFactor = 10.0f;
+    glm::vec3 pos = (collision.contact + (collision.contact + collision.normal * collision.penetration * strecthFactor))/2.0f; 
     coordinator->AddComponent(entity, DebugMarker{});
     coordinator->AddComponent(
         entity,
         Cuboid{
-            .halfExtents = glm::vec3(0.1, 10 * collision.penetration, 0.1),
+            .halfExtents = glm::vec3(0.1, 0.1, collision.penetration * strecthFactor),
             .color = glm::vec3(1.0, 0.0, 0.0),
         });
     glm::quat dir = glm::quatLookAt(collision.normal, glm::vec3(0.0, 1.0, 0.0));
     coordinator->AddComponent(entity, Transform{
-                                          .position = collision.contact,
+                                          .position = pos,
                                           .rotation = glm::normalize(dir),
                                       });
   }

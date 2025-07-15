@@ -7,7 +7,7 @@ set(BGFX_CONFIG_UTILS OFF CACHE BOOL "" FORCE)
 set(BGFX_INSTALL OFF CACHE BOOL "" FORCE)
 set(BGFX_BUILD_EXAMPLES OFF CACHE BOOL "Disable bgfx from building imgui")
 set(BGFX_INSTALL_EXAMPLES OFF CACHE BOOL "Disable bgfx from building imgui" FORCE)
-set(BGFX_CONFIG_DEBUG ${CMAKE_BUILD_TYPE} STREQUAL "Debug"})
+set(BGFX_CONFIG_DEBUG ${CMAKE_BUILD_TYPE} STREQUAL "Debug")
 set(BGFX_BUILD_TOOLS_SHADER ON CACHE BOOL "Enable shader compilation")
 
 # BGFX (assuming it has its own CMakeLists)
@@ -16,7 +16,7 @@ add_subdirectory(bgfx.cmake)
 
 if(TARGET example-common)
     set_target_properties(example-common PROPERTIES EXCLUDE_FROM_ALL TRUE)
-    message(WARNING "Force-disabled example-common despite config")
+    # message(WARNING "Force-disabled example-common despite config")
 endif()
 
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "Disable shared libs")

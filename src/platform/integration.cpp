@@ -4,7 +4,14 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
-#include <X11/Xlib.h>
+
+#if defined (SDL_PLATFORM_WIN32)
+#include <cstddef>
+#include <cstdint>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 #include <cstdint>
 #include <iostream>
 
@@ -25,6 +32,7 @@ void IntegrateToBGFX(SDL_Window *window) {
     pd.nwh = nswindow;
   }
 #elif defined(SDL_PLATFORM_LINUX)
+#include <X11/Xlib.h>
   if (SDL_strcmp(SDL_GetCurrentVideoDriver(), "x11") == 0) {
     std::cout << "using x11" << std::endl;
     Display *xdisplay = (Display *)SDL_GetPointerProperty(

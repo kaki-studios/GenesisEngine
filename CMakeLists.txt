@@ -5,6 +5,8 @@ project(Engine3D LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+enable_language(CXX)
+
 # Enable folders for IDE organization
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

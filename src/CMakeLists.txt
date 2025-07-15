@@ -48,7 +48,7 @@ target_link_libraries(EngineLib PUBLIC
     bgfx
     bx
     bimg
-    SDL3
+    SDL3::SDL3
     glm
     imgui
 )
@@ -88,6 +88,31 @@ bgfx_compile_shaders(
   OUTPUT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/rendering/shaders/generated
   AS_HEADERS
 )
+
+
+# Fix MinGW locale issues for BGFX
+if(WIN32)
+    target_compile_definitions(bgfx PRIVATE 
+        _LOCALE_T_DEFINED
+        locale_t=_locale_t
+        LC_CTYPE_MASK=LC_CTYPE
+        newlocale=_create_locale
+        strtof_l=_strtof_l
+        freelocale=_free_locale
+    )
+    
+    # Apply same fixes to GLSL optimizer if it's a separate target
+    if(TARGET glsl-optimizer)
+        target_compile_definitions(glsl-optimizer PRIVATE 
+            _LOCALE_T_DEFINED
+            locale_t=_locale_t
+            LC_CTYPE_MASK=LC_CTYPE
+            newlocale=_create_locale
+            strtof_l=_strtof_l
+            freelocale=_free_locale
+        )
+    endif()
+endif()
 
 
 # Organize files in IDE

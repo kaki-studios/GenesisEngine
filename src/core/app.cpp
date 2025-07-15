@@ -25,7 +25,7 @@ App::App(int width, int height) {
 
   SDL_Window *window =
       SDL_CreateWindow("TEST TITLE", width, height,
-                       SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE);
+                       /*SDL_WINDOW_FULLSCREEN | */SDL_WINDOW_RESIZABLE);
   // ImGuiContext *ctx = ImGui::CreateContext();
   // std::cout << "context is " << ctx << std::endl;
 

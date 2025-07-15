@@ -1,4 +1,3 @@
-#include "bgfx/defines.h"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/quaternion_float.hpp"
 #include "glm/ext/quaternion_trigonometric.hpp"
@@ -52,7 +51,7 @@ void CreateWalls(App *app) {
   }
 }
 
-int main(void) {
+int main(int argc, char* argv[]) {
   std::cout << "Starting EngineDemo..." << std::endl;
   App app(1920, 1080);
 
@@ -134,7 +133,7 @@ int main(void) {
   last = now;
   deltaTime = 0.0;
   double accumulator = 0.0;
-  const double H = 0.01;
+  const double H = 1/60.0;
 
   while (!app.ShouldClose()) {
     deltaTime = (now - last) / 1000.0;
