@@ -1,6 +1,6 @@
 #include "../ecs/coordinator.h"
 #include "../ecs/system.h"
-#include "cuboid/collision.h"
+#include "collision/collision.h"
 #include <vector>
 
 struct DebugMarker {};
@@ -9,7 +9,7 @@ struct DebugMarker {};
 class DebugCollisions : public ECS::System {
 public:
   void Init(ECS::Coordinator *coordinator);
-  void SetCollisions(std::vector<CollisionInfo> collisions);
+  void SetCollisions(std::vector<CollisionResult> collisions);
   void ClearCollisions();
 
 private:

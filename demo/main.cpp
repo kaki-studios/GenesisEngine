@@ -48,6 +48,11 @@ void CreateWalls(App *app) {
                   .halfExtents = glm::vec3(25.0f, 0.5f, 25.0f),
                   .color = glm::vec3(0.0f, float((i + 1) % 2), float(i % 2)),
               });
+
+    app->coordinator.AddComponent(wall,
+                                 Collider(CuboidCollider(
+                                  glm::vec3(25.0f, 0.5f, 25.0f)
+                                 )));
   }
 }
 
@@ -61,6 +66,7 @@ int main(int argc, char* argv[]) {
   app.coordinator.RegisterComponent<Cuboid>();
   app.coordinator.RegisterComponent<Rigidbody>();
   app.coordinator.RegisterComponent<Camera>();
+  app.coordinator.RegisterComponent<Collider>();
 
   auto cameraSystem = app.coordinator.RegisterSystem<CameraSystem>();
   cameraSystem->Init(&app);
@@ -85,6 +91,11 @@ int main(int argc, char* argv[]) {
                                      .color = glm::vec3(1.0f, 0.5f * i, 0.0f),
                                  });
     app.coordinator.AddComponent(entities[i],
+                                 Collider(CuboidCollider(
+                                     halfExtents
+                                 )));
+
+    app.coordinator.AddComponent(entities[i],
                                  CreateCuboidRB(halfExtents, 1.0f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
@@ -108,6 +119,10 @@ int main(int argc, char* argv[]) {
                     .halfExtents = glm::vec3(25.0f, 0.5f, 25.0f),
                     .color = glm::vec3(0.0f, 0.0f, 1.0f),
                 });
+    app.coordinator.AddComponent(ground,
+                                 Collider(CuboidCollider(
+                                  glm::vec3(25.0f, 0.5f, 25.0f)
+                                 )));
   }
 
   // camera

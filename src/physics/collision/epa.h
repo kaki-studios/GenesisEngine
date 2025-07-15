@@ -1,3 +1,4 @@
+#pragma once
 #include <glm/common.hpp>
 #include <glm/ext.hpp>
 #include "gjk.h"
@@ -13,4 +14,4 @@ struct CollisionResult {
 };
 
 
-CollisionResult EPA(const Collider *a, const Collider *b, Simplex s);
+CollisionResult EPA(const Collider *aCol, const Collider *bCol, Simplex s);

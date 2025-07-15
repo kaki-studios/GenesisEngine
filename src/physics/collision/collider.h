@@ -2,11 +2,14 @@
 #include <glm/common.hpp>
 #include <glm/ext.hpp>
 #include <memory>
+#include "../rendering/cube_renderer.h"
 
 class ICollider {
     public:
     virtual const glm::vec3 support(const glm::vec3) const = 0;
     virtual ~ICollider() = default;
+    glm::vec3 position;
+    glm::quat rotation;
 };
 
 class Collider {
@@ -24,4 +27,5 @@ class Collider {
     Collider(Collider&&) = default;
     Collider& operator=(const Collider&) = default;
     Collider& operator=(Collider&&) = default;
+    Collider() = default;
 };

@@ -6,6 +6,7 @@
 #include "glm/ext/vector_float3.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include <vector>
+#include <iostream>
 
 void DebugCollisions::ClearCollisions() {
   std::vector<ECS::Entity> toBeDeleted;
@@ -26,11 +27,14 @@ void DebugCollisions::Init(ECS::Coordinator *coordinator) {
   coordinator->SetSystemSignature<DebugCollisions>(signature);
 }
 
-void DebugCollisions::SetCollisions(std::vector<CollisionInfo> collisions) {
+void DebugCollisions::SetCollisions(std::vector<CollisionResult> collisions) {
   for (auto &collision : collisions) {
     ECS::Entity entity = coordinator->CreateEntity();
     const float strecthFactor = 10.0f;
-    glm::vec3 pos = (collision.contact + (collision.contact + collision.normal * collision.penetration * strecthFactor))/2.0f; 
+    glm::vec3 contact = (collision.contactA + collision.contactB) *0.5f;
+    std::cout << "Contact Point: " << contact.x << ", " << contact.y << ", " << contact.z << "\n";
+    std::cout << "Between entity " << collision.bodyA << " and entity " << collision.bodyB << "\n";
+    glm::vec3 pos = (contact + (contact + collision.normal * collision.penetration * strecthFactor))/2.0f; 
     coordinator->AddComponent(entity, DebugMarker{});
     coordinator->AddComponent(
         entity,

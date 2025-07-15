@@ -1,7 +1,9 @@
 #include "cuboid_collider.h"
 
-CuboidCollider::CuboidCollider(glm::vec3& pos, glm::quat& rot, glm::vec3& hExt):
-position(pos),rotation(rot),halfExtents(hExt) {}
+CuboidCollider::CuboidCollider(const glm::vec3& hExt):
+halfExtents(hExt) {}
+CuboidCollider::CuboidCollider(glm::vec3&& hExt):
+halfExtents(hExt) {}
 
 
 //maximizes dot product

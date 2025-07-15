@@ -1,4 +1,5 @@
 #include "epa.h"
+#include <iostream>
 #include <algorithm>
 
 
@@ -23,7 +24,7 @@ std::pair<std::vector<glm::vec4>, size_t> GetFaceNormals(
             normal *= -1;
             distance *= -1;
         }
-        normals.emplace_back(glm::vec4(distance, normal));
+        normals.emplace_back(glm::vec4(normal, distance));
         if (distance < minDistance) {
             minTriangle = i/3;
             minDistance = distance;
@@ -57,9 +58,20 @@ bool SameDirection(glm::vec4 a, glm::vec3 b) {
     return dot(glm::vec3(a.x,a.y,a.z), b) > 0;
 }
 
+const int EPA_MAX_ITERS = 200;
 
-CollisionResult EPA(const Collider* a, const Collider* b, Simplex s) {
+//TODO this doesn't work
+//gist of the real algo:
+//find closest face, project origin onto it, express it in barycentric coordinates (weighted sum of vertices)
+//and then you have collision contact points.
+CollisionResult EPA(const Collider* aCol , const Collider* bCol, Simplex s) {
     std::vector<SupportPoint> polytope(s.points.begin(), s.points.end());
+    std::cout << "SIMPLEX size: " << s.size << std::endl;
+    for (int i =0; i<s.size; i++) {
+        std::cout << "point (" << i << "): ";
+        std::cout << "a-b: " << s[i].point.x << ", " << s[i].point.y << ", " << s[i].point.z << "\n";
+    }
+    int iterCount =0;
     
     std::vector<size_t> faces = {
         0,1,2,
@@ -74,14 +86,18 @@ CollisionResult EPA(const Collider* a, const Collider* b, Simplex s) {
     SupportPoint support;
 
     while(minDistance == FLT_MAX) {
+        if (iterCount++ > EPA_MAX_ITERS) {
+            std::cout << "EPA didn't converge\n";
+            break;
+        };
         glm::vec4 temp = normals[minFace];
         minNormal = glm::vec3(temp.x, temp.y, temp.z);
         minDistance = temp.w;
-        support = Support(a, b, minNormal);
+        support = Support(aCol, bCol, minNormal);
         float sDistance = dot(minNormal, support.point);
 
         if (abs(sDistance - minDistance) < 0.001f){
-            minDistance = FLT_MAX;
+            //minDistance = FLT_MAX;
 
             std::vector<std::pair<size_t, size_t>> uniqueEdges;
 			for (size_t i = 0; i < normals.size(); i++) {

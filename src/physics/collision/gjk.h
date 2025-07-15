@@ -26,6 +26,16 @@ struct Simplex {
 
     }
 
+    Simplex& operator=(std::initializer_list<SupportPoint> list) 
+	{
+		size = 0;
+
+		for (SupportPoint point : list)
+			points[size++] = point;
+
+		return *this;
+	}
+
     SupportPoint operator[](int i) {return points[i];}
     const SupportPoint operator[](int i) const{return points[i];}
 
@@ -39,6 +49,6 @@ struct GJKResult {
 };
 
 
-SupportPoint Support(const Collider* a, const Collider* b, const glm::vec3& dir);
+SupportPoint Support(const Collider* aCol, const Collider* bCol, const glm::vec3& dir);
 
-GJKResult GJKIntersect(const Collider* a, const Collider* b);
+GJKResult GJKIntersect(const Collider* aCol, const Collider* bCol);

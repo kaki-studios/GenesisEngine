@@ -1,3 +1,4 @@
+#pragma once
 #include "../core/app.h"
 #include "glm/fwd.hpp"
 #include <bgfx/bgfx.h>

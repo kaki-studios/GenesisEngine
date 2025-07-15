@@ -85,6 +85,7 @@ void RigidbodySystem::Init(App *app) {
   signature.set(app->coordinator.GetComponentType<Transform>(), true);
   signature.set(app->coordinator.GetComponentType<Rigidbody>(), true);
   signature.set(app->coordinator.GetComponentType<Cuboid>(), true);
+  signature.set(app->coordinator.GetComponentType<Collider>(), true);
   app->coordinator.SetSystemSignature<RigidbodySystem>(signature);
 }
 
@@ -211,6 +212,6 @@ void RigidbodySystem::Update(double dt) {
         };
       SolveVelocities(tempInfo, &app->coordinator, h);
     }
-    //debug->SetCollisions(collisions);
+    debug->SetCollisions(collisions);
   }
 }
