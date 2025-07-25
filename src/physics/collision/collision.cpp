@@ -30,7 +30,7 @@ std::vector<CollisionResult> CollectCollisionPairsNew(std::set<ECS::Entity> enti
         if (!gjk.colliding) {
             continue;
         }
-        CollisionResult collision = EPA(&c1, &c2,  gjk.simplex);
+        CollisionResult collision = EPA(c1, c2, gjk.simplex);
         collision.bodyA = e1;
         collision.bodyB = e2;
         if(collision.penetration > 0)

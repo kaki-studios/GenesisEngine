@@ -29,8 +29,8 @@ App::App(int width, int height) {
   // ImGuiContext *ctx = ImGui::CreateContext();
   // std::cout << "context is " << ctx << std::endl;
 
-  // make function for this
   SDL_SetWindowRelativeMouseMode(window, true);
+  SDL_SetWindowFullscreen(window, false);
   this->window = window;
   if (!window) {
     SDL_Quit();
@@ -53,6 +53,8 @@ App::~App() {
     SDL_DestroyWindow(window);
   SDL_Quit();
 }
+
+SDL_Window *App::GetWindow() {return window;}
 
 bool App::ShouldClose() { return quit; }
 void App::Update() {

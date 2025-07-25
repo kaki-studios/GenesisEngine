@@ -11,6 +11,7 @@ public:
   bool ShouldClose();
   void Update();
   bool GetWindowDims(int *width, int *height);
+  SDL_Window *GetWindow();
   ECS::Coordinator coordinator;
   ~App();
 

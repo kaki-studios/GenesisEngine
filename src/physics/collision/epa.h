@@ -11,7 +11,24 @@ struct CollisionResult {
     glm::vec3 contactB;
     ECS::Entity bodyA;
     ECS::Entity bodyB;
+    bool valid; //if epa failed, false
+
+    CollisionResult() : penetration(0.0f), normal(glm::vec3(0)), valid(false) {}
 };
 
 
-CollisionResult EPA(const Collider *aCol, const Collider *bCol, Simplex s);
+struct Face {
+    int vertices[3];
+    glm::vec3 normal;//pointing outward
+    float distance; //distance from origin
+    Face(int a,int b,int c) {
+        vertices[0] = a;
+        vertices[1] = b;
+        vertices[2] = c;
+        //calculate later
+        normal = glm::vec3(0);
+        distance = 0;
+    }
+};
+
+CollisionResult EPA(const Collider& a, const Collider& b, const Simplex& simplex);

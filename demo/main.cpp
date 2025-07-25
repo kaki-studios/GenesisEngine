@@ -58,7 +58,8 @@ void CreateWalls(App *app) {
 
 int main(int argc, char* argv[]) {
   std::cout << "Starting EngineDemo..." << std::endl;
-  App app(1920, 1080);
+  //App app(1920, 1080);
+  App app(800, 600);
 
   std::array<ECS::Entity, 2> entities;
   // these should be somewhere else
@@ -99,8 +100,8 @@ int main(int argc, char* argv[]) {
                                  CreateCuboidRB(halfExtents, 1.0f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
-    rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
-    rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
+    //rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
+    //rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
     // gravity
     rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
   }
@@ -150,22 +151,37 @@ int main(int argc, char* argv[]) {
   double accumulator = 0.0;
   const double H = 1/60.0;
 
+  bool lastKeyState = false;
+  bool currKeyState = false;
+  bool paused = false;
+
   while (!app.ShouldClose()) {
     deltaTime = (now - last) / 1000.0;
     last = now;
     now = SDL_GetTicks();
     app.Update();
+
+    InputState state = app.GetInputState();
+    currKeyState = state.keysDown[SDLK_ESCAPE];
+    //rising edge
+    if(currKeyState && !lastKeyState) {
+      paused = !paused;
+      SDL_SetWindowRelativeMouseMode(app.GetWindow(), !paused);
+    }
     accumulator += deltaTime;
     while (accumulator >= H) {
-      InputState state = app.GetInputState();
       if (!state.mouseButtonsDown[SDL_BUTTON_LEFT]) {
         rbSystem->Update(H);
       }
       accumulator -= H;
     }
 
-    cameraSystem->Update(deltaTime);
+    if(!paused) {
+        cameraSystem->Update(deltaTime);
+    }
     cubeRenderer->Update();
+    
+    lastKeyState = state.keysDown[SDLK_ESCAPE];
 
     bgfx::frame();
   }

@@ -2,156 +2,198 @@
 #include <iostream>
 #include <algorithm>
 
+static const int EPA_MAX_ITERS = 64;
+static const float TOLERANCE = 1e-6f;
 
 //helpers
-std::pair<std::vector<glm::vec4>, size_t> GetFaceNormals(
-    const std::vector<SupportPoint>& polytope,
-    const std::vector<size_t>& faces
-) {
-    std::vector<glm::vec4> normals;
-    size_t minTriangle = 0;
-    float minDistance = FLT_MAX;
+static void calculateFaceProperties(Face& face, const std::vector<SupportPoint>& vertices) {
+    const glm::vec3& a = vertices[face.vertices[0]].point;
+    const glm::vec3& b = vertices[face.vertices[1]].point;
+    const glm::vec3& c = vertices[face.vertices[2]].point;
 
-    for (size_t i=0;i<faces.size(); i+=3) {
-        glm::vec3 a = polytope[faces[i]].point;
-        glm::vec3 b = polytope[faces[i+1]].point;
-        glm::vec3 c = polytope[faces[i+2]].point;
+    glm::vec3 ab = b-a;
+    glm::vec3 ac = c-a;
+    glm::vec3 normal = glm::normalize(glm::cross(ab,ac));
 
-        glm::vec3 normal = glm::normalize(glm::cross(b-a,c-a));
-        float distance = dot(normal, a);
+//normal has to point away from origin
+    if(glm::dot(normal,a)<0) {
+        normal = -normal;
+        //maintain winding order
+        std::swap(face.vertices[1], face.vertices[2]);
+    }
 
-        if (distance < 0) {
-            normal *= -1;
-            distance *= -1;
-        }
-        normals.emplace_back(glm::vec4(normal, distance));
-        if (distance < minDistance) {
-            minTriangle = i/3;
-            minDistance = distance;
+    face.normal = normal;
+    face.distance = glm::dot(normal, a);
+}
+
+static int findClosestFace(const std::vector<Face>& faces) {
+    int closestIndex = 0;
+    float minDistance = faces[0].distance;
+    for (size_t i = 1; i< faces.size(); ++i ) {
+        if (faces[i].distance < minDistance) {
+            minDistance = faces[i].distance;
+            closestIndex = static_cast<int>(i);
         }
     }
-    return {normals, minTriangle};
+    return closestIndex;
 }
 
-void AddIfUniqueEdge(
-	std::vector<std::pair<size_t, size_t>>& edges,
-	const std::vector<size_t>& faces,
-	size_t a,
-	size_t b)
-{
-	auto reverse = std::find(                       //      0--<--3
-		edges.begin(),                              //     / \ B /   A: 2-0
-		edges.end(),                                //    / A \ /    B: 0-2
-		std::make_pair(faces[b], faces[a]) //   1-->--2
-	);
- 
-	if (reverse != edges.end()) {
-		edges.erase(reverse);
-	}
- 
-	else {
-		edges.emplace_back(faces[a], faces[b]);
-	}
+static bool isPointInFrontOfFace(const glm::vec3& point, const Face& face, const std::vector<SupportPoint>& vertices) {
+    const glm::vec3& facePoint = vertices[face.vertices[0]].point;
+    glm::vec3 toPoint = point - facePoint;
+    return glm::dot(toPoint, face.normal) > TOLERANCE;
 }
 
-bool SameDirection(glm::vec4 a, glm::vec3 b) {
-    return dot(glm::vec3(a.x,a.y,a.z), b) > 0;
-}
-
-const int EPA_MAX_ITERS = 200;
-
-//TODO this doesn't work
-//gist of the real algo:
-//find closest face, project origin onto it, express it in barycentric coordinates (weighted sum of vertices)
-//and then you have collision contact points.
-CollisionResult EPA(const Collider* aCol , const Collider* bCol, Simplex s) {
-    std::vector<SupportPoint> polytope(s.points.begin(), s.points.end());
-    std::cout << "SIMPLEX size: " << s.size << std::endl;
-    for (int i =0; i<s.size; i++) {
-        std::cout << "point (" << i << "): ";
-        std::cout << "a-b: " << s[i].point.x << ", " << s[i].point.y << ", " << s[i].point.z << "\n";
+static std::vector<std::pair<int, int>> findHoleEdges(
+    const std::vector<Face>& faces, const glm::vec3& newPoint,
+    const std::vector<SupportPoint>& vertices) {
+    std::vector<std::pair<int, int>> edges;
+    std::vector<std::pair<int, int>> allEdges;
+    for (const auto& face : faces) {
+        if(isPointInFrontOfFace(newPoint, face, vertices)) {
+            allEdges.push_back({face.vertices[0],face.vertices[1]});
+            allEdges.push_back({face.vertices[1],face.vertices[2]});
+            allEdges.push_back({face.vertices[2],face.vertices[0]});
+        }
     }
-    int iterCount =0;
+    //find edges that appear only once (boundary edges)
+    for(size_t i = 0; i<allEdges.size();++i) {
+        bool isUnique = true;
+        for (size_t j = 0; j<allEdges.size(); ++j) {
+            if(i!=j) {
+                if ((allEdges[i].first == allEdges[j].second && 
+                allEdges[j].first == allEdges[i].second
+                )) {
+                    isUnique = false;
+                    break;
+                }
+            }
+        }
+        if (isUnique) {
+            edges.push_back(allEdges[i]);
+        }
+    }
+    return edges;
+}
+
+static std::vector<Face> createInitialTetrahedron() {
+    std::vector<Face> faces;
+    faces.emplace_back(0,1,2);
+    faces.emplace_back(0,3,1);
+    faces.emplace_back(1,3,2);
+    faces.emplace_back(2,3,0);
+    return faces;
+}
+
+static bool validateSimplex(const Simplex& simplex) {
+    if(simplex.size!=4) return false;
+
+    // Check if points are coplanar
+    glm::vec3 v1 = simplex[1].point - simplex[0].point;
+    glm::vec3 v2 = simplex[2].point - simplex[0].point;
+    glm::vec3 v3 = simplex[3].point - simplex[0].point;
     
-    std::vector<size_t> faces = {
-        0,1,2,
-        0,3,1,
-        0,2,3,
-        1,3,2,
-    };
-    auto [normals, minFace] = GetFaceNormals(polytope, faces);
-    glm::vec3 minNormal;
-    float minDistance = FLT_MAX;
+    glm::vec3 normal = glm::cross(v1, v2);
+    float volume = std::abs(glm::dot(normal, v3));
+    
+    return volume > TOLERANCE;
+}
 
-    SupportPoint support;
+//calculates JUST the contact points (contactA and contactB)
+static void calculateContactPoint(CollisionResult& res, const Face& closestFace, const std::vector<SupportPoint>& vertices) {
+    const SupportPoint& sp0 = vertices[closestFace.vertices[0]];
+    const SupportPoint& sp1 = vertices[closestFace.vertices[1]];
+    const SupportPoint& sp2 = vertices[closestFace.vertices[2]];
 
-    while(minDistance == FLT_MAX) {
-        if (iterCount++ > EPA_MAX_ITERS) {
-            std::cout << "EPA didn't converge\n";
-            break;
-        };
-        glm::vec4 temp = normals[minFace];
-        minNormal = glm::vec3(temp.x, temp.y, temp.z);
-        minDistance = temp.w;
-        support = Support(aCol, bCol, minNormal);
-        float sDistance = dot(minNormal, support.point);
+    glm::vec3 p0 = sp0.point;
+    glm::vec3 p1 = sp1.point;
+    glm::vec3 p2 = sp2.point;
 
-        if (abs(sDistance - minDistance) < 0.001f){
-            //minDistance = FLT_MAX;
+    glm::vec3 normal = closestFace.normal;
+    glm::vec3 closestPoint = closestFace.distance * normal;
 
-            std::vector<std::pair<size_t, size_t>> uniqueEdges;
-			for (size_t i = 0; i < normals.size(); i++) {
-				if (SameDirection(normals[i], support.point)) {
-					size_t f = i * 3;
+    glm::vec3 v0 = p1-p0;
+    glm::vec3 v1 = p2-p0;
+    glm::vec3 v2 = closestPoint - p0;
 
-					AddIfUniqueEdge(uniqueEdges, faces, f,     f + 1);
-					AddIfUniqueEdge(uniqueEdges, faces, f + 1, f + 2);
-					AddIfUniqueEdge(uniqueEdges, faces, f + 2, f    );
+    float dot00 = glm::dot(v0, v0);
+    float dot01 = glm::dot(v0, v1);
+    float dot02 = glm::dot(v0, v2);
+    float dot11 = glm::dot(v1, v1);
+    float dot12 = glm::dot(v1, v2);
+    
+    float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+    float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+    float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+    float w = 1.0f - u - v;
+    
+    // Clamp barycentric coordinates to ensure they're within the triangle
+    if (u < 0) { u = 0; v = glm::clamp(v, 0.0f, 1.0f); w = 1.0f - v; }
+    if (v < 0) { v = 0; u = glm::clamp(u, 0.0f, 1.0f); w = 1.0f - u; }
+    if (w < 0) { w = 0; u = glm::clamp(u / (u + v), 0.0f, 1.0f); v = 1.0f - u; }
 
-					faces[f + 2] = faces.back(); faces.pop_back();
-					faces[f + 1] = faces.back(); faces.pop_back();
-					faces[f    ] = faces.back(); faces.pop_back();
+    std::cout << "u + v + w: " << u+v+w <<"\n";
+    
+    // Calculate contact points using barycentric coordinates
+    glm::vec3 contactA = w * sp0.suppA + u * sp1.suppA + v * sp2.suppA;
+    glm::vec3 contactB = w * sp0.suppB + u * sp1.suppB + v * sp2.suppB;
 
-					normals[i] = normals.back(); // pop-erase
-					normals.pop_back();
+    res.contactA = contactA;
+    res.contactB = contactB;
+}
 
-					i--;
-				}
-			}
+CollisionResult EPA(const Collider& a, const Collider& b, const Simplex& simplex) {
+    if(!validateSimplex(simplex)) {
+        return CollisionResult();
+    }
 
-            std::vector<size_t> newFaces;
-			for (auto [edgeIndex1, edgeIndex2] : uniqueEdges) {
-				newFaces.push_back(edgeIndex1);
-				newFaces.push_back(edgeIndex2);
-				newFaces.push_back(polytope.size());
-			}
-			 
-			polytope.push_back(support);
+    std::vector<SupportPoint> vertices(simplex.points.begin(), simplex.points.end());
+    std::vector<Face> faces = createInitialTetrahedron();
 
-			auto [newNormals, newMinFace] = GetFaceNormals(polytope, newFaces);
-            float oldMinDistance = FLT_MAX;
-			for (size_t i = 0; i < normals.size(); i++) {
-				if (normals[i].w < oldMinDistance) {
-					oldMinDistance = normals[i].w;
-					minFace = i;
-				}
-			}
- 
-			if (newNormals[newMinFace].w < oldMinDistance) {
-				minFace = newMinFace + normals.size();
-			}
- 
-			faces  .insert(faces  .end(), newFaces  .begin(), newFaces  .end());
-			normals.insert(normals.end(), newNormals.begin(), newNormals.end());
+    for (auto& face: faces) {
+        calculateFaceProperties(face, vertices);
+    }
+
+    for (int iteration = 0; iteration < EPA_MAX_ITERS; ++iteration) {
+        int closestFaceIndex = findClosestFace(faces);
+        const Face& closestFace = faces[closestFaceIndex];
+
+        SupportPoint newSupportPoint = Support(&a, &b, closestFace.normal);
+        float supportDistance = glm::dot(newSupportPoint.point, closestFace.normal);
+
+//difference always positive, no need for abs()
+        if(supportDistance - closestFace.distance < TOLERANCE) {
+            //we've found the minimum penetration
+            CollisionResult result;
+            calculateContactPoint(result, closestFace, vertices);
+            result.normal = closestFace.normal;
+            result.penetration = supportDistance;
+            result.valid = true;
+            return result;
+        }
+        std::vector<std::pair<int, int>> holeEdges = findHoleEdges(faces, newSupportPoint.point, vertices);
+        //remove faces that can "see" the support point
+        faces.erase(
+            std::remove_if(
+                faces.begin(), faces.end(),
+                [&](const Face& face) {
+                    return isPointInFrontOfFace(newSupportPoint.point, face,vertices);
+                }
+
+            ),
+            faces.end()
+        );
+
+        int newVertexIndex = static_cast<int>(vertices.size());
+        vertices.push_back(newSupportPoint); //newVertexIndex now points to newSupportPoint
+
+        for (const auto& edge : holeEdges) {
+            Face newFace(edge.first, edge.second, newVertexIndex);
+            calculateFaceProperties(newFace, vertices);
+            faces.push_back(newFace);
         }
     }
-    CollisionResult info;
- 
-	info.normal = minNormal;
-	info.penetration = minDistance + 0.001f;
-    info.contactA = support.suppA;
-    info.contactB = support.suppB;
+    std::cout  << "EPA failed to converge\n";
+    return CollisionResult();
 
-    return info;
- 
 }
