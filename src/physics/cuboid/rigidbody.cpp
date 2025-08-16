@@ -1,6 +1,6 @@
 #include "rigidbody.h"
-#include "collision.h"
 #include "../collision/collision.h"
+#include "collision.h"
 #include "glm/ext/quaternion_common.hpp"
 #include "glm/ext/quaternion_geometric.hpp"
 #include "glm/fwd.hpp"
@@ -104,24 +104,25 @@ void RigidbodySystem::Update(double dt) {
   if (collisions.size()) {
     std::cout << collisions.size() << std::endl;
   }
-  //for (auto &collision : collisions) {
-  //  auto &rb1 = app->coordinator.GetComponent<Rigidbody>(collision.bodyA);
-  //  auto &t1 = app->coordinator.GetComponent<Transform>(collision.bodyA);
-  //  auto &rb2 = app->coordinator.GetComponent<Rigidbody>(collision.bodyB);
-  //  auto &t2 = app->coordinator.GetComponent<Transform>(collision.bodyB);
-  //  glm::vec3 r1 = collision.contact - t1.position;
-  //  glm::vec3 r2 = collision.contact - t2.position;
-  //  collision.p1 = t1.position + glm::mat3_cast(t1.rotation) * r1;
-  //  collision.p2 = t2.position + glm::mat3_cast(t2.rotation) * r2;
-  //  collision.p1hat = rb1.prevPosition + glm::mat3_cast(rb1.prevRotation) * r1;
-  //  collision.p2hat = rb2.prevPosition + glm::mat3_cast(rb2.prevRotation) * r1;
+  // for (auto &collision : collisions) {
+  //   auto &rb1 = app->coordinator.GetComponent<Rigidbody>(collision.bodyA);
+  //   auto &t1 = app->coordinator.GetComponent<Transform>(collision.bodyA);
+  //   auto &rb2 = app->coordinator.GetComponent<Rigidbody>(collision.bodyB);
+  //   auto &t2 = app->coordinator.GetComponent<Transform>(collision.bodyB);
+  //   glm::vec3 r1 = collision.contact - t1.position;
+  //   glm::vec3 r2 = collision.contact - t2.position;
+  //   collision.p1 = t1.position + glm::mat3_cast(t1.rotation) * r1;
+  //   collision.p2 = t2.position + glm::mat3_cast(t2.rotation) * r2;
+  //   collision.p1hat = rb1.prevPosition + glm::mat3_cast(rb1.prevRotation) *
+  //   r1; collision.p2hat = rb2.prevPosition + glm::mat3_cast(rb2.prevRotation)
+  //   * r1;
 
   // collision.penetration =
   //     glm::dot(collision.p2 - collision.p1, collision.normal);
 
-   // std::cout << "penetration: " << collision.penetration << std::endl;
-   // std::cout << "bodyA: " << collision.bodyA << "\n";
-   // std::cout << "bodyB: " << collision.bodyB << "\n";
+  // std::cout << "penetration: " << collision.penetration << std::endl;
+  // std::cout << "bodyA: " << collision.bodyA << "\n";
+  // std::cout << "bodyB: " << collision.bodyB << "\n";
   // }
   double h = dt / NUM_SUBSTEPS;
   for (int i = 0; i < NUM_SUBSTEPS; i++) {
@@ -162,29 +163,22 @@ void RigidbodySystem::Update(double dt) {
         ECS::Entity bodyA = collisionInfo.bodyA;
         ECS::Entity bodyB = collisionInfo.bodyB;
 
-       //auto &t1 =
-       //    app->coordinator.GetComponent<Transform>(collisionInfo.bodyA);
-       //auto &c1 = app->coordinator.GetComponent<Cuboid>(collisionInfo.bodyA);
-       //auto &t2 =
-       //    app->coordinator.GetComponent<Transform>(collisionInfo.bodyB);
-       //auto &c2 = app->coordinator.GetComponent<Cuboid>(collisionInfo.bodyB);
-       //OBB o1 = OBB(t1.position, t1.rotation, c1.halfExtents);
-       //OBB o2 = OBB(t2.position, t2.rotation, c2.halfExtents);
-       //collisionInfo = SAT(o1, o2);
-       //collisionInfo.bodyA = bodyA;
-       //collisionInfo.bodyB = bodyB;
-       ///std::cout << "collision penetration: " << collisionInfo.penetration
-                  //<< std::endl;
+        // auto &t1 =
+        //     app->coordinator.GetComponent<Transform>(collisionInfo.bodyA);
+        // auto &c1 =
+        // app->coordinator.GetComponent<Cuboid>(collisionInfo.bodyA); auto &t2
+        // =
+        //     app->coordinator.GetComponent<Transform>(collisionInfo.bodyB);
+        // auto &c2 =
+        // app->coordinator.GetComponent<Cuboid>(collisionInfo.bodyB); OBB o1 =
+        // OBB(t1.position, t1.rotation, c1.halfExtents); OBB o2 =
+        // OBB(t2.position, t2.rotation, c2.halfExtents); collisionInfo =
+        // SAT(o1, o2); collisionInfo.bodyA = bodyA; collisionInfo.bodyB =
+        // bodyB;
+        /// std::cout << "collision penetration: " << collisionInfo.penetration
+        //<< std::endl;
 
-        CollisionInfo tempInfo = CollisionInfo{
-          .bodyA = collisionInfo.bodyA,
-          .bodyB = collisionInfo.bodyB,
-          .contact = 0.5f*(collisionInfo.contactA + collisionInfo.contactB),
-          .normal = collisionInfo.normal,
-          .penetration =collisionInfo.penetration,
-          .lagrangeMultiplier =0,
-        };
-        SolvePositions(tempInfo, &app->coordinator, h);
+        SolvePositions(collisionInfo, &app->coordinator, h);
       }
     }
     for (auto &entity : mEntities) {
@@ -202,15 +196,7 @@ void RigidbodySystem::Update(double dt) {
       //             transform.position.z);
     }
     for (auto &collision : collisions) {
-        CollisionInfo tempInfo = CollisionInfo{
-          .bodyA = collision.bodyA,
-          .bodyB = collision.bodyB,
-          .contact = 0.5f*(collision.contactA + collision.contactB),
-          .normal = collision.normal,
-          .penetration =collision.penetration,
-          .lagrangeMultiplier =0,
-        };
-      SolveVelocities(tempInfo, &app->coordinator, h);
+      // SolveVelocities(collision, &app->coordinator, h);
     }
     debug->SetCollisions(collisions);
   }

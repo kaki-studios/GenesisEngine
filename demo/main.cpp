@@ -49,16 +49,14 @@ void CreateWalls(App *app) {
                   .color = glm::vec3(0.0f, float((i + 1) % 2), float(i % 2)),
               });
 
-    app->coordinator.AddComponent(wall,
-                                 Collider(CuboidCollider(
-                                  glm::vec3(25.0f, 0.5f, 25.0f)
-                                 )));
+    app->coordinator.AddComponent(
+        wall, Collider(CuboidCollider(glm::vec3(25.0f, 0.5f, 25.0f))));
   }
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   std::cout << "Starting EngineDemo..." << std::endl;
-  //App app(1920, 1080);
+  // App app(1920, 1080);
   App app(800, 600);
 
   std::array<ECS::Entity, 2> entities;
@@ -92,18 +90,16 @@ int main(int argc, char* argv[]) {
                                      .color = glm::vec3(1.0f, 0.5f * i, 0.0f),
                                  });
     app.coordinator.AddComponent(entities[i],
-                                 Collider(CuboidCollider(
-                                     halfExtents
-                                 )));
+                                 Collider(CuboidCollider(halfExtents)));
 
     app.coordinator.AddComponent(entities[i],
                                  CreateCuboidRB(halfExtents, 1.0f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
-    //rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
-    //rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
-    // gravity
-    rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
+    rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
+    rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
+    //  gravity
+    // rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
   }
   // ground
   CreateWalls(&app);
@@ -120,10 +116,8 @@ int main(int argc, char* argv[]) {
                     .halfExtents = glm::vec3(25.0f, 0.5f, 25.0f),
                     .color = glm::vec3(0.0f, 0.0f, 1.0f),
                 });
-    app.coordinator.AddComponent(ground,
-                                 Collider(CuboidCollider(
-                                  glm::vec3(25.0f, 0.5f, 25.0f)
-                                 )));
+    app.coordinator.AddComponent(
+        ground, Collider(CuboidCollider(glm::vec3(25.0f, 0.5f, 25.0f))));
   }
 
   // camera
@@ -149,7 +143,7 @@ int main(int argc, char* argv[]) {
   last = now;
   deltaTime = 0.0;
   double accumulator = 0.0;
-  const double H = 1/60.0;
+  const double H = 1 / 60.0;
 
   bool lastKeyState = false;
   bool currKeyState = false;
@@ -163,8 +157,8 @@ int main(int argc, char* argv[]) {
 
     InputState state = app.GetInputState();
     currKeyState = state.keysDown[SDLK_ESCAPE];
-    //rising edge
-    if(currKeyState && !lastKeyState) {
+    // rising edge
+    if (currKeyState && !lastKeyState) {
       paused = !paused;
       SDL_SetWindowRelativeMouseMode(app.GetWindow(), !paused);
     }
@@ -176,11 +170,11 @@ int main(int argc, char* argv[]) {
       accumulator -= H;
     }
 
-    if(!paused) {
-        cameraSystem->Update(deltaTime);
+    if (!paused) {
+      cameraSystem->Update(deltaTime);
     }
     cubeRenderer->Update();
-    
+
     lastKeyState = state.keysDown[SDLK_ESCAPE];
 
     bgfx::frame();

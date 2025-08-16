@@ -6,6 +6,7 @@
 #include "glm/geometric.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/matrix.hpp"
+#include "physics/collision/epa.h"
 #include "rigidbody.h"
 #include <ECS.h>
 #include <cstdio>
@@ -102,11 +103,11 @@ glm::vec3 findContactPoint(const OBB &o1, const OBB &o2,
   return contactPoint;
 }
 
-CollisionInfo SAT(OBB o1, OBB o2) {
-  CollisionInfo info;
+CollisionResult SAT(OBB o1, OBB o2) {
+  CollisionResult info;
   info.penetration = 0.0f;
   info.normal = glm::vec3(0.0f);
-  info.contact = glm::vec3(0.0f);
+  // info.contact = glm::vec3(0.0f);
 
   // if (glm::length(o1.rotation) != 1.0f) {
   //   std::printf("o1 rotation: %f\n", glm::length(o1.rotation));
@@ -174,60 +175,20 @@ CollisionInfo SAT(OBB o1, OBB o2) {
     }
   }
 
-  if (collision && minOverlap != std::numeric_limits<float>::max()){
+  if (collision && minOverlap != std::numeric_limits<float>::max()) {
     info.penetration = minOverlap * 0.5f;
     info.normal = separatingAxis;
-    info.contact = findContactPoint(o1, o2, separatingAxis, minOverlap);
+    // info.contact = findContactPoint(o1, o2, separatingAxis, minOverlap);
   }
 
   return info;
 }
 
-std::vector<CollisionInfo>
-CollectCollisionPairs(std::set<ECS::Entity> entities,
-                      ECS::Coordinator *coordinator) {
-  std::vector<CollisionInfo> collisions;
-  for (auto i = entities.begin(); i != entities.end(); ++i) {
-    auto j = i;
-    j++; // start from i+1
-    for (; j != entities.end(); ++j) {
-      ECS::Entity e1 = *i;
-      ECS::Entity e2 = *j;
-      auto &t1 = coordinator->GetComponent<Transform>(e1);
-      auto &c1 = coordinator->GetComponent<Cuboid>(e1);
-      auto &rb1 = coordinator->GetComponent<Rigidbody>(e1);
-      auto &t2 = coordinator->GetComponent<Transform>(e2);
-      auto &c2 = coordinator->GetComponent<Cuboid>(e2);
-      auto &rb2 = coordinator->GetComponent<Rigidbody>(e2);
-
-      if (rb1.invMass == 0 && rb2.invMass == 0) {
-        continue;
-      }
-
-      OBB o1 = OBB(t1.position, t1.rotation, c1.halfExtents);
-      OBB o2 = OBB(t2.position, t2.rotation, c2.halfExtents);
-      if (!BroadPhaseIsColliding(o1, o2)) {
-        continue;
-      }
-      CollisionInfo result = SAT(o1, o2);
-      if (result.penetration > 0) {
-
-        result.bodyA = e1;
-        result.bodyB = e2;
-        result.lagrangeMultiplier = 0.0f;
-        collisions.push_back(result);
-      }
-    }
-  }
-
-  return collisions;
-}
-
 // inverse of stiffness and has units meters/Newton
-const float COLLISION_COMPLIANCE = 0.0f;
+const float COLLISION_COMPLIANCE = 1e-6;
 
-void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
-                    float h) {
+void SolvePositions(CollisionResult collisionInfo,
+                    ECS::Coordinator *coordinator, float h) {
   ECS::Entity e1 = collisionInfo.bodyA;
   ECS::Entity e2 = collisionInfo.bodyB;
   auto &rb1 = coordinator->GetComponent<Rigidbody>(e1);
@@ -238,8 +199,22 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
     return;
   }
 
-  glm::vec3 r1 = collisionInfo.contact - t1.position;
-  glm::vec3 r2 = collisionInfo.contact - t2.position;
+  glm::vec3 r1 = collisionInfo.contactA - t1.position;
+
+  std::cout << "Contact Point A: " << collisionInfo.contactA.x << ", "
+            << collisionInfo.contactA.y << ", " << collisionInfo.contactA.z
+            << "\n";
+  glm::vec3 r2 = collisionInfo.contactB - t2.position;
+
+  std::cout << "Contact Point B: " << collisionInfo.contactB.x << ", "
+            << collisionInfo.contactB.y << ", " << collisionInfo.contactB.z
+            << "\n";
+
+  // glm::vec3 r1 = collisionInfo.contactA;
+  // glm::vec3 r2 = collisionInfo.contactB;
+
+  // std::cout << "r1: " << r1.x << ", " << r1.y << ", " << r1.z << "\n";
+  // std::cout << "r2: " << r2.x << ", " << r2.y << ", " << r2.z << "\n";
 
   // generalized inverse masses
   glm::mat3 R1 = glm::mat3_cast(t1.rotation);
@@ -263,11 +238,11 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
   // lagrangeMultiplier updates
   float aHat = COLLISION_COMPLIANCE / (h * h);
   float dl =
-      -(collisionInfo.penetration + aHat * collisionInfo.lagrangeMultiplier) /
+      (-collisionInfo.penetration - aHat * collisionInfo.lagrangeMultiplier) /
       (gim1 + gim2 + aHat);
-  std::cout << "dl: " << dl << "\n";
+  // std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
-  std::cout << "lambda" << collisionInfo.lagrangeMultiplier << "\n";
+  // std::cout << "lambda" << collisionInfo.lagrangeMultiplier << "\n";
 
   glm::vec3 positionalImpulse = dl * collisionInfo.normal;
 
@@ -286,12 +261,13 @@ void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
   // idk what to do with this (maybe store??)
   glm::vec3 collisionForce =
       collisionInfo.lagrangeMultiplier * (collisionInfo.normal / (h * h));
-  std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
-            << " and penetration: " << collisionInfo.penetration << std::endl;
+  // std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
+  //           << " and penetration: " << collisionInfo.penetration <<
+  //           std::endl;
 }
 
-void SolveVelocities(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
-                     float h) {
+void SolveVelocities(CollisionResult collisionInfo,
+                     ECS::Coordinator *coordinator, float h) {
   auto &rb1 = coordinator->GetComponent<Rigidbody>(collisionInfo.bodyA);
   auto &t1 = coordinator->GetComponent<Transform>(collisionInfo.bodyA);
   auto &rb2 = coordinator->GetComponent<Rigidbody>(collisionInfo.bodyB);
@@ -301,22 +277,23 @@ void SolveVelocities(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
     return;
   }
 
-  glm::vec3 r1 = collisionInfo.contact - t1.position;
-  glm::vec3 r2 = collisionInfo.contact - t2.position;
+  glm::vec3 r1 = collisionInfo.contactA - t1.position;
+  glm::vec3 r2 = collisionInfo.contactB - t2.position;
 
   glm::vec3 v = (rb1.linearVelocity + glm::cross(rb1.angularVelocity, r1)) -
                 (rb2.linearVelocity + glm::cross(rb2.angularVelocity, r2));
   float vn = glm::dot(collisionInfo.normal, v);
   glm::vec3 vt = v - collisionInfo.normal * vn;
 
-  float friction = (rb1.friction + rb2.friction) / 2;
-  glm::vec3 fn =
-      (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
-
   if (glm::length(vt) < 1e-6f) {
     std::cout << "really small tangential velocity" << std::endl;
     return;
   }
+  glm::vec3 frictionDirection = -glm::normalize(vt);
+
+  float friction = (rb1.friction + rb2.friction) / 2;
+  glm::vec3 fn =
+      (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
 
   glm::vec3 deltaV = -(glm::normalize(vt)) *
                      glm::min(h * friction * glm::length(fn), glm::length(vt));

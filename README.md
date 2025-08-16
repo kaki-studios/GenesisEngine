@@ -9,4 +9,4 @@ Build the demo using cmake, like this:
 `cmake -S . -B build` and `cmake --build build --config Release`
 
 ## Notes
-Mainly for testing, also I need a name for the engine
+It's called GenesisEngine since it's my first game engine.

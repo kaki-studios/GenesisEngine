@@ -9,11 +9,10 @@
 ## Low Level TODOs
 - [ ] Camera controls and debugging
 - [ ] Collisions working properly
+    - [ ] Study XPBD more since the collision resolution is wrong.
 
 ## Architecture
-- [ ] Replace SAT collision logic with gjk + epa collision logic
-- Problem:
-BoxCollider needs rotation and position. Solution: supply Transform data to gjk
+- [X] Replace SAT collision logic with gjk + epa collision logic
 
 ## Bugs
 - [ ] works in wayland only if "-DCMAKE_BUILD_TYPE=Debug" is not set (FIX: set -DCMAKE_BUILD_TYPE=RelWithDebInfo)

@@ -1,3 +1,4 @@
+#include "../collision/epa.h"
 #include "../ecs/coordinator.h"
 #include "../ecs/entity_manager.h"
 #include "../include/ECS.h"
@@ -17,32 +18,16 @@ struct OBB {
       : position(pos), rotation(rot), halfExtents(hExts) {}
 };
 
-struct CollisionInfo {
-  ECS::Entity bodyA;
-  ECS::Entity bodyB;
-
-  glm::vec3 contact;
-  glm::vec3 normal;
-  float penetration;
-
-  float lagrangeMultiplier; // lambda
-  //
-  glm::vec3 p1;
-  glm::vec3 p2;
-
-  glm::vec3 p1hat;
-  glm::vec3 p2hat;
-};
-
-CollisionInfo SAT(OBB o1, OBB o2);
+// CollisionInfo SAT(OBB o1, OBB o2);
 
 // caller must ensure that all entites have the following components:
 // Transform
 // Rigidbody
 // Cuboid
-std::vector<CollisionInfo> CollectCollisionPairs(std::set<ECS::Entity> entities,
-                                                 ECS::Coordinator *coordinator);
-void SolvePositions(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
-                    float h);
-void SolveVelocities(CollisionInfo collisionInfo, ECS::Coordinator *coordinator,
-                     float h);
+std::vector<CollisionResult>
+CollectCollisionPairs(std::set<ECS::Entity> entities,
+                      ECS::Coordinator *coordinator);
+void SolvePositions(CollisionResult collisionInfo,
+                    ECS::Coordinator *coordinator, float h);
+void SolveVelocities(CollisionResult collisionInfo,
+                     ECS::Coordinator *coordinator, float h);
