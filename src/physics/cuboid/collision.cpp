@@ -201,14 +201,14 @@ void SolvePositions(CollisionResult collisionInfo,
 
   glm::vec3 r1 = collisionInfo.contactA - t1.position;
 
-  std::cout << "Contact Point A: " << collisionInfo.contactA.x << ", "
-            << collisionInfo.contactA.y << ", " << collisionInfo.contactA.z
-            << "\n";
+  // std::cout << "Contact Point A: " << collisionInfo.contactA.x << ", "
+  //           << collisionInfo.contactA.y << ", " << collisionInfo.contactA.z
+  //           << "\n";
   glm::vec3 r2 = collisionInfo.contactB - t2.position;
-
-  std::cout << "Contact Point B: " << collisionInfo.contactB.x << ", "
-            << collisionInfo.contactB.y << ", " << collisionInfo.contactB.z
-            << "\n";
+  //
+  // std::cout << "Contact Point B: " << collisionInfo.contactB.x << ", "
+  //           << collisionInfo.contactB.y << ", " << collisionInfo.contactB.z
+  //           << "\n";
 
   // glm::vec3 r1 = collisionInfo.contactA;
   // glm::vec3 r2 = collisionInfo.contactB;

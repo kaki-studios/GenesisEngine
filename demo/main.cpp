@@ -99,7 +99,7 @@ int main(int argc, char *argv[]) {
     rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
     rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
     //  gravity
-    // rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
+    rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
   }
   // ground
   CreateWalls(&app);

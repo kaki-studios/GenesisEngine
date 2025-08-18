@@ -1,4 +1,5 @@
 #include "rigidbody.h"
+#include "../../rendering/cube_renderer.h"
 #include "../collision/collision.h"
 #include "collision.h"
 #include "glm/ext/quaternion_common.hpp"
@@ -7,7 +8,6 @@
 #include "glm/geometric.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/matrix.hpp"
-#include "rendering/cube_renderer.h"
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -90,7 +90,7 @@ void RigidbodySystem::Init(App *app) {
 }
 
 const int NUM_SUBSTEPS = 20;
-const int NUM_POS_ITERS = 1;
+const int NUM_POS_ITERS = 50;
 
 void RigidbodySystem::Update(double dt) {
   debug->ClearCollisions();
@@ -104,26 +104,27 @@ void RigidbodySystem::Update(double dt) {
   if (collisions.size()) {
     std::cout << collisions.size() << std::endl;
   }
-  // for (auto &collision : collisions) {
-  //   auto &rb1 = app->coordinator.GetComponent<Rigidbody>(collision.bodyA);
-  //   auto &t1 = app->coordinator.GetComponent<Transform>(collision.bodyA);
-  //   auto &rb2 = app->coordinator.GetComponent<Rigidbody>(collision.bodyB);
-  //   auto &t2 = app->coordinator.GetComponent<Transform>(collision.bodyB);
-  //   glm::vec3 r1 = collision.contact - t1.position;
-  //   glm::vec3 r2 = collision.contact - t2.position;
-  //   collision.p1 = t1.position + glm::mat3_cast(t1.rotation) * r1;
-  //   collision.p2 = t2.position + glm::mat3_cast(t2.rotation) * r2;
-  //   collision.p1hat = rb1.prevPosition + glm::mat3_cast(rb1.prevRotation) *
-  //   r1; collision.p2hat = rb2.prevPosition + glm::mat3_cast(rb2.prevRotation)
-  //   * r1;
+  for (auto &collision : collisions) {
+    //   auto &rb1 = app->coordinator.GetComponent<Rigidbody>(collision.bodyA);
+    //   auto &t1 = app->coordinator.GetComponent<Transform>(collision.bodyA);
+    //   auto &rb2 = app->coordinator.GetComponent<Rigidbody>(collision.bodyB);
+    //   auto &t2 = app->coordinator.GetComponent<Transform>(collision.bodyB);
+    //   glm::vec3 r1 = collision.contact - t1.position;
+    //   glm::vec3 r2 = collision.contact - t2.position;
+    //   collision.p1 = t1.position + glm::mat3_cast(t1.rotation) * r1;
+    //   collision.p2 = t2.position + glm::mat3_cast(t2.rotation) * r2;
+    //   collision.p1hat = rb1.prevPosition + glm::mat3_cast(rb1.prevRotation) *
+    //   r1; collision.p2hat = rb2.prevPosition +
+    //   glm::mat3_cast(rb2.prevRotation)
+    //   * r1;
 
-  // collision.penetration =
-  //     glm::dot(collision.p2 - collision.p1, collision.normal);
+    // collision.penetration =
+    //     glm::dot(collision.p2 - collision.p1, collision.normal);
 
-  // std::cout << "penetration: " << collision.penetration << std::endl;
-  // std::cout << "bodyA: " << collision.bodyA << "\n";
-  // std::cout << "bodyB: " << collision.bodyB << "\n";
-  // }
+    std::cout << "penetration: " << collision.penetration << std::endl;
+    // std::cout << "bodyA: " << collision.bodyA << "\n";
+    // std::cout << "bodyB: " << collision.bodyB << "\n";
+  }
   double h = dt / NUM_SUBSTEPS;
   for (int i = 0; i < NUM_SUBSTEPS; i++) {
     for (auto &entity : mEntities) {
@@ -160,8 +161,8 @@ void RigidbodySystem::Update(double dt) {
     }
     for (int i = 0; i < NUM_POS_ITERS; i++) {
       for (auto &collisionInfo : collisions) {
-        ECS::Entity bodyA = collisionInfo.bodyA;
-        ECS::Entity bodyB = collisionInfo.bodyB;
+        // ECS::Entity bodyA = collisionInfo.bodyA;
+        // ECS::Entity bodyB = collisionInfo.bodyB;
 
         // auto &t1 =
         //     app->coordinator.GetComponent<Transform>(collisionInfo.bodyA);
@@ -196,7 +197,7 @@ void RigidbodySystem::Update(double dt) {
       //             transform.position.z);
     }
     for (auto &collision : collisions) {
-      // SolveVelocities(collision, &app->coordinator, h);
+      SolveVelocities(collision, &app->coordinator, h);
     }
     debug->SetCollisions(collisions);
   }

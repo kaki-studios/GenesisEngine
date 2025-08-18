@@ -5,7 +5,6 @@
 #include "glm/ext/quaternion_geometric.hpp"
 #include "glm/ext/vector_float3.hpp"
 #include "glm/gtc/quaternion.hpp"
-#include <iostream>
 #include <vector>
 
 void DebugCollisions::ClearCollisions() {
