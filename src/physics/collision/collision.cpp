@@ -48,6 +48,8 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
       // }
 
       for (auto &point : m.points) {
+        std::cout << "Point: (" << point.x << "), (" << point.y << "), ("
+                  << point.z << ")\n";
         CollisionResult temp;
         temp.valid = true;
         temp.lagrangeMultiplier = 0.0f;
@@ -55,7 +57,7 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
         temp.bodyB = e2;
         temp.normal = m.normal;
         temp.contactA = point;
-        temp.contactB = point - m.normal * m.penetration;
+        temp.contactB = point + m.normal * m.penetration;
         temp.penetration = m.penetration;
         collisions.push_back(collision);
       }

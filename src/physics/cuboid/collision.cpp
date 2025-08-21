@@ -198,13 +198,26 @@ void SolvePositions(CollisionResult collisionInfo,
   if (rb1.invMass == 0 && rb2.invMass == 0) {
     return;
   }
+  // NOTE: recompute penetration since this constraint might not be the only one
+  // operating on this collision so recomputation is necessary
 
-  glm::vec3 r1 = collisionInfo.contactA - t1.position;
+  glm::vec3 r1 =
+      (collisionInfo.contactA - t1.position) * glm::inverse(t1.rotation);
+  glm::vec3 p1 = collisionInfo.contactA;
 
   // std::cout << "Contact Point A: " << collisionInfo.contactA.x << ", "
   //           << collisionInfo.contactA.y << ", " << collisionInfo.contactA.z
   //           << "\n";
-  glm::vec3 r2 = collisionInfo.contactB - t2.position;
+  glm::vec3 r2 =
+      (collisionInfo.contactB - t2.position) * glm::inverse(t1.rotation);
+  glm::vec3 p2 = collisionInfo.contactB;
+  // std::cout << "old penetration: " << collisionInfo.penetration << "\n";
+  // collisionInfo.penetration = glm::dot((p1 - p2), collisionInfo.normal);
+  // std::cout << "recomputed penetration: " << collisionInfo.penetration <<
+  // "\n";
+  if (collisionInfo.penetration < 0) {
+    return;
+  }
   //
   // std::cout << "Contact Point B: " << collisionInfo.contactB.x << ", "
   //           << collisionInfo.contactB.y << ", " << collisionInfo.contactB.z

@@ -1,8 +1,8 @@
 #include "clipping.h"
 #include "collider.h"
-#include "glm/common.hpp"
 #include "glm/geometric.hpp"
 #include "physics/collision/epa.h"
+#include <iostream>
 #include <utility>
 #include <vector>
 
@@ -174,7 +174,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
     return m;
 
   // EPA normal points B -> A by convention.
-  glm::vec3 nEPA = glm::normalize(epa.normal);
+  glm::vec3 nEPA = -glm::normalize(epa.normal);
 
   // Decide reference vs incident:
   // Choose the collider that has a face most aligned with nEPA as reference.
@@ -232,6 +232,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   if (contacts.empty()) {
     // Degenerate case; you can fallback to a single point along the normal.
     // Here we just return empty points but keep normal & penetration.
+    std::cout << "no contacts, Degenerate\n";
     m.normal = mNormal;
     m.penetration = std::max(epa.penetration, 0.0f);
     return m;

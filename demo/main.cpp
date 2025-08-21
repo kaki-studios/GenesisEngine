@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
     rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
-    rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
+    // rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
     //  gravity
     rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
   }
@@ -167,12 +167,22 @@ int main(int argc, char *argv[]) {
       if (!state.mouseButtonsDown[SDL_BUTTON_LEFT]) {
         rbSystem->Update(H);
       }
+
       accumulator -= H;
     }
 
     if (!paused) {
       cameraSystem->Update(deltaTime);
     }
+    auto &transform = app.coordinator.GetComponent<Transform>(entities[0]);
+    auto &rigidbody = app.coordinator.GetComponent<Rigidbody>(entities[0]);
+    std::cout << "Position: (" << transform.position.x << "), ("
+              << transform.position.y << "), (" << transform.position.z
+              << ")\n";
+
+    std::cout << "Velocity: (" << rigidbody.linearVelocity.x << "), ("
+              << rigidbody.linearVelocity.y << "), ("
+              << rigidbody.linearVelocity.z << ")\n";
     cubeRenderer->Update();
 
     lastKeyState = state.keysDown[SDLK_ESCAPE];

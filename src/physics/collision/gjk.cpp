@@ -135,6 +135,6 @@ GJKResult GJKIntersect(const Collider *aCol, const Collider *bCol) {
     }
     direction = glm::normalize(direction);
   }
-  std::cout << "gjk didn't converge, returning false" << std::endl;
+  // std::cout << "gjk didn't converge, returning false" << std::endl;
   return {false, simplex};
 }
