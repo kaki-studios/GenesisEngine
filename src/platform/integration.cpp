@@ -77,7 +77,8 @@ void IntegrateToBGFX(SDL_Window *window) {
   init.debug = false;
   init.platformData = pd;
   int width, height;
-  SDL_GetWindowSize(window, &width, &height);
+  SDL_GetWindowSizeInPixels(window, &width, &height);
+  std::cout << "Width: " << width << ", Height: " << height << "\n";
   init.resolution.width = (uint32_t)width;
   init.resolution.height = (uint32_t)height;
   init.resolution.reset = BGFX_RESET_VSYNC;

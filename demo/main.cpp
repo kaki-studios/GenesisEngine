@@ -56,8 +56,8 @@ void CreateWalls(App *app) {
 
 int main(int argc, char *argv[]) {
   std::cout << "Starting EngineDemo..." << std::endl;
-  // App app(1920, 1080);
-  App app(800, 600);
+  App app(1920, 1080);
+  // App app(800, 600);
 
   std::array<ECS::Entity, 2> entities;
   // these should be somewhere else
