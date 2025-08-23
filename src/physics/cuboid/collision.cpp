@@ -195,29 +195,25 @@ void SolvePositions(CollisionResult collisionInfo,
   auto &rb2 = coordinator->GetComponent<Rigidbody>(e2);
   auto &t1 = coordinator->GetComponent<Transform>(e1);
   auto &t2 = coordinator->GetComponent<Transform>(e2);
+  collisionInfo.normal = glm::normalize(collisionInfo.normal);
   if (rb1.invMass == 0 && rb2.invMass == 0) {
     return;
   }
   // NOTE: recompute penetration since this constraint might not be the only one
   // operating on this collision so recomputation is necessary
+  // TODO: static friction (section 3.5 in xpbd)
 
-  glm::vec3 r1 =
-      (collisionInfo.contactA - t1.position) * glm::inverse(t1.rotation);
-  glm::vec3 p1 = collisionInfo.contactA;
+  glm::vec3 r1 = collisionInfo.contactA;
+  glm::vec3 p1 = t1.position + (collisionInfo.contactA * t1.rotation);
 
-  // std::cout << "Contact Point A: " << collisionInfo.contactA.x << ", "
-  //           << collisionInfo.contactA.y << ", " << collisionInfo.contactA.z
-  //           << "\n";
-  glm::vec3 r2 =
-      (collisionInfo.contactB - t2.position) * glm::inverse(t1.rotation);
-  glm::vec3 p2 = collisionInfo.contactB;
-  // std::cout << "old penetration: " << collisionInfo.penetration << "\n";
-  // collisionInfo.penetration = glm::dot((p1 - p2), collisionInfo.normal);
-  // std::cout << "recomputed penetration: " << collisionInfo.penetration <<
-  // "\n";
+  glm::vec3 r2 = collisionInfo.contactB;
+  glm::vec3 p2 = t2.position + (collisionInfo.contactB * t2.rotation);
+  std::cout << "old penetration" << collisionInfo.penetration << "\n";
+  collisionInfo.penetration = glm::dot((p1 - p2), collisionInfo.normal);
   if (collisionInfo.penetration < 0) {
     return;
   }
+  std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
   //
   // std::cout << "Contact Point B: " << collisionInfo.contactB.x << ", "
   //           << collisionInfo.contactB.y << ", " << collisionInfo.contactB.z
@@ -290,8 +286,8 @@ void SolveVelocities(CollisionResult collisionInfo,
     return;
   }
 
-  glm::vec3 r1 = collisionInfo.contactA - t1.position;
-  glm::vec3 r2 = collisionInfo.contactB - t2.position;
+  glm::vec3 r1 = collisionInfo.contactA;
+  glm::vec3 r2 = collisionInfo.contactB;
 
   glm::vec3 v = (rb1.linearVelocity + glm::cross(rb1.angularVelocity, r1)) -
                 (rb2.linearVelocity + glm::cross(rb2.angularVelocity, r2));

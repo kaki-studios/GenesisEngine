@@ -2,6 +2,8 @@
 #include "../cuboid/rigidbody.h"
 #include "../rendering/cube_renderer.h"
 #include "clipping.h"
+#include "glm/ext/quaternion_common.hpp"
+#include "glm/matrix.hpp"
 #include "physics/collision/epa.h"
 #include <iostream>
 
@@ -48,6 +50,14 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
       // }
 
       for (auto &point : m.points) {
+        glm::vec3 localA = glm::inverse(t1.rotation) *
+                           ((point - m.normal * m.penetration) - t1.position);
+        glm::vec3 localB = glm::inverse(t2.rotation) * (point - t2.position);
+        glm::vec3 globalA = t1.position + localA * t1.rotation;
+        glm::vec3 globalB = t2.position + localB * t2.rotation;
+        float penetration = glm::dot(globalA - globalB, m.normal);
+        std::cout << "reconstructed penetration: " << penetration << "\n";
+
         std::cout << "Point: (" << point.x << "), (" << point.y << "), ("
                   << point.z << ")\n";
         CollisionResult temp;
@@ -55,9 +65,10 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
         temp.lagrangeMultiplier = 0.0f;
         temp.bodyA = e1;
         temp.bodyB = e2;
-        temp.normal = m.normal;
-        temp.contactA = point;
-        temp.contactB = point + m.normal * m.penetration;
+        temp.normal = -m.normal;
+        // transform back to local space
+        temp.contactA = localA;
+        temp.contactB = localB;
         temp.penetration = m.penetration;
         collisions.push_back(collision);
       }
