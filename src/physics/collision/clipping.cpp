@@ -176,6 +176,9 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   // EPA normal points B -> A by convention.
   glm::vec3 nEPA = -glm::normalize(epa.normal);
 
+  const ICollider *REF = &A;
+  const ICollider *INC = &B;
+
   // Decide reference vs incident:
   // Choose the collider that has a face most aligned with nEPA as reference.
   int aRef = findFaceMostAligned(A, nEPA);
@@ -185,8 +188,6 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   float aAlign = glm::dot(A.getFace(aRef).normal, nEPA);
   float bAlign = glm::dot(B.getFace(bRef).normal, -nEPA);
 
-  const ICollider *REF = &A;
-  const ICollider *INC = &B;
   int refIdx = aRef;
   int incIdx = -1;
   glm::vec3 nRefOut =
@@ -194,6 +195,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   glm::vec3 mNormal = nEPA;   // manifold normal (incident -> reference)
 
   if (bAlign > aAlign) {
+    std::cout << "flipping normals\n";
     REF = &B;
     INC = &A;
     refIdx = bRef;
@@ -223,9 +225,11 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   for (const glm::vec3 &p : clipped) {
     float sd = refPlane.signedDistance(
         p); // >0 means in front of outward normal (outside)
+    std::cout << "sd: " << sd << "\n";
     if (sd <= eps) {
       glm::vec3 proj = p - sd * refPlane.normal;
       contacts.push_back(proj);
+      // contacts.push_back(p);
     }
   }
 
@@ -241,8 +245,14 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   // Optional: cap to ≤ 4 points for solver stability/perf
   contacts = reduceToFour(contacts);
 
+  for (auto &v : contacts) {
+    glm::vec3 contactB = v - m.normal * m.penetration;
+    glm::vec3 contactA = v;
+
+    m.points.push_back({contactA, contactB});
+  }
+
   m.normal = mNormal;
   m.penetration = std::max(epa.penetration, 0.0f);
-  m.points = std::move(contacts);
   return m;
 }

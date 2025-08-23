@@ -10,9 +10,10 @@
 - [ ] Camera controls and debugging
 - [ ] Collisions working properly
     - [ ] Study XPBD more since the collision resolution is wrong.
-    - [ ] Recompute collision penetration per substep
-        - [ ] In narrowphase: transform collsion points to bodies' local space
-        - [ ] In solver: transform them back to global space and recompute the penetration
+        - [ ] Apply slop
+    - [X] Recompute collision penetration per substep
+        - [X] In narrowphase: transform collsion points to bodies' local space
+        - [X] In solver: transform them back to global space and recompute the penetration
 
 ## Architecture
 - [X] Replace SAT collision logic with gjk + epa collision logic

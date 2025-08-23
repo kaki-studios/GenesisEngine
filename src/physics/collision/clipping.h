@@ -13,11 +13,16 @@ struct Plane {
   }
 };
 
+struct ContactPoint {
+  glm::vec3 positionA;
+  glm::vec3 positionB;
+};
+
 struct ContactManifold {
   glm::vec3 normal; // incident -> reference (same direction as EPA normal after
                     // choosing reference)
-  float penetration;             // typically EPA depth
-  std::vector<glm::vec3> points; // up to 4
+  float penetration;                // typically EPA depth
+  std::vector<ContactPoint> points; // up to 4
 };
 
 ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,

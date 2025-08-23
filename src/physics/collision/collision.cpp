@@ -3,6 +3,7 @@
 #include "../rendering/cube_renderer.h"
 #include "clipping.h"
 #include "glm/ext/quaternion_common.hpp"
+#include "glm/geometric.hpp"
 #include "glm/matrix.hpp"
 #include "physics/collision/epa.h"
 #include <iostream>
@@ -50,16 +51,19 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
       // }
 
       for (auto &point : m.points) {
-        glm::vec3 localA = glm::inverse(t1.rotation) *
-                           ((point - m.normal * m.penetration) - t1.position);
-        glm::vec3 localB = glm::inverse(t2.rotation) * (point - t2.position);
+        glm::vec3 pA = point.positionA;
+        glm::vec3 pB = point.positionB;
+        glm::vec3 localA = glm::inverse(t1.rotation) * (pA - t1.position);
+        glm::vec3 localB = glm::inverse(t2.rotation) * (pB - t2.position);
         glm::vec3 globalA = t1.position + localA * t1.rotation;
         glm::vec3 globalB = t2.position + localB * t2.rotation;
-        float penetration = glm::dot(globalA - globalB, m.normal);
+        float distance = glm::length((globalB - globalA) - (pB - pA));
+        float penetration = glm::dot(globalB - globalA, m.normal);
         std::cout << "reconstructed penetration: " << penetration << "\n";
+        std::cout << "distance" << distance << "\n";
 
-        std::cout << "Point: (" << point.x << "), (" << point.y << "), ("
-                  << point.z << ")\n";
+        // std::cout << "Point: (" << pA.x << "), (" << pA.y << "), (" << pA.z
+        //           << ")\n";
         CollisionResult temp;
         temp.valid = true;
         temp.lagrangeMultiplier = 0.0f;
