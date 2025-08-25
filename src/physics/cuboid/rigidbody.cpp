@@ -196,7 +196,7 @@ void RigidbodySystem::Update(double dt) {
       //             transform.position.z);
     }
     for (auto &collision : collisions) {
-      // SolveVelocities(collision, &app->coordinator, h);
+      SolveVelocities(collision, &app->coordinator, h);
     }
     debug->SetCollisions(collisions);
   }
