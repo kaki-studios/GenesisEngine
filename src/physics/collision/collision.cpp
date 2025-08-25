@@ -55,10 +55,10 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
         glm::vec3 pB = point.positionB;
         glm::vec3 localA = glm::inverse(t1.rotation) * (pA - t1.position);
         glm::vec3 localB = glm::inverse(t2.rotation) * (pB - t2.position);
-        glm::vec3 globalA = t1.position + localA * t1.rotation;
-        glm::vec3 globalB = t2.position + localB * t2.rotation;
+        glm::vec3 globalA = t1.position + t1.rotation * localA;
+        glm::vec3 globalB = t2.position + t2.rotation * localB;
         float distance = glm::length((globalB - globalA) - (pB - pA));
-        float penetration = glm::dot(globalB - globalA, m.normal);
+        float penetration = glm::dot(globalA - globalB, m.normal);
         std::cout << "reconstructed penetration: " << penetration << "\n";
         std::cout << "distance" << distance << "\n";
 
@@ -69,12 +69,13 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
         temp.lagrangeMultiplier = 0.0f;
         temp.bodyA = e1;
         temp.bodyB = e2;
-        temp.normal = -m.normal;
+        temp.normal = m.normal;
         // transform back to local space
         temp.contactA = localA;
         temp.contactB = localB;
         temp.penetration = m.penetration;
-        collisions.push_back(collision);
+        // temp.penetration = -penetration;
+        collisions.push_back(temp);
       }
     }
   }

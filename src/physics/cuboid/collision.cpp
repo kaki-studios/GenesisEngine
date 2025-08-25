@@ -204,20 +204,17 @@ void SolvePositions(CollisionResult collisionInfo,
   // TODO: static friction (section 3.5 in xpbd)
 
   glm::vec3 r1 = collisionInfo.contactA;
-  glm::vec3 p1 = t1.position + (collisionInfo.contactA * t1.rotation);
+  glm::vec3 p1 = t1.position + (t1.rotation * collisionInfo.contactA);
 
   glm::vec3 r2 = collisionInfo.contactB;
-  glm::vec3 p2 = t2.position + (collisionInfo.contactB * t2.rotation);
+  glm::vec3 p2 = t2.position + (t2.rotation * collisionInfo.contactB);
   std::cout << "old penetration" << collisionInfo.penetration << "\n";
   collisionInfo.penetration = glm::dot((p1 - p2), collisionInfo.normal);
-  if (collisionInfo.penetration < 0) {
+  std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
+  if (collisionInfo.penetration <= 0) {
     return;
   }
-  std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
   //
-  // std::cout << "Contact Point B: " << collisionInfo.contactB.x << ", "
-  //           << collisionInfo.contactB.y << ", " << collisionInfo.contactB.z
-  //           << "\n";
 
   // glm::vec3 r1 = collisionInfo.contactA;
   // glm::vec3 r2 = collisionInfo.contactB;
@@ -251,6 +248,8 @@ void SolvePositions(CollisionResult collisionInfo,
       (gim1 + gim2 + aHat);
   // std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
+  collisionInfo.lagrangeMultiplier =
+      glm::max(0.0f, collisionInfo.lagrangeMultiplier);
   // std::cout << "lambda" << collisionInfo.lagrangeMultiplier << "\n";
 
   glm::vec3 positionalImpulse = dl * collisionInfo.normal;

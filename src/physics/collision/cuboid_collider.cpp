@@ -22,20 +22,21 @@ glm::vec3 const CuboidCollider::support(const glm::vec3 direction) const {
 int const CuboidCollider::getFaceCount() const { return 6; }
 
 Face const CuboidCollider::getFace(int i) const {
+  // ccw
   static const int faceIndices[6][4] = {
-      {0, 2, 6, 4}, // +X
-      {1, 5, 7, 3}, // -X
-      {0, 4, 5, 1}, // +Y
-      {2, 3, 7, 6}, // -Y
-      {0, 1, 3, 2}, // +Z
-      {4, 6, 7, 5}  // -Z
+      {1, 3, 7, 5}, // +X
+      {0, 4, 6, 2}, // -X
+      {7, 3, 2, 6}, // +Y
+      {5, 4, 0, 1}, // -Y
+      {4, 5, 7, 6}, // +Z
+      {0, 2, 3, 1}  // -Z
   };
   static const glm::vec3 normals[6] = {{1, 0, 0},  {-1, 0, 0}, {0, 1, 0},
                                        {0, -1, 0}, {0, 0, 1},  {0, 0, -1}};
 
   Face f;
   f.normal = rotation * normals[i];
-  f.indices.assign(faceIndices[i], faceIndices[i] + 4);
+  f.indices.assign(&faceIndices[i][0], &faceIndices[i][3]);
   return f;
 }
 

@@ -90,7 +90,7 @@ void RigidbodySystem::Init(App *app) {
 }
 
 const int NUM_SUBSTEPS = 20;
-const int NUM_POS_ITERS = 50;
+const int NUM_POS_ITERS = 2;
 
 void RigidbodySystem::Update(double dt) {
   debug->ClearCollisions();
@@ -121,7 +121,6 @@ void RigidbodySystem::Update(double dt) {
     // collision.penetration =
     //     glm::dot(collision.p2 - collision.p1, collision.normal);
 
-    std::cout << "penetration: " << collision.penetration << std::endl;
     // std::cout << "bodyA: " << collision.bodyA << "\n";
     // std::cout << "bodyB: " << collision.bodyB << "\n";
   }

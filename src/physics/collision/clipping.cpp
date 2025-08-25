@@ -245,14 +245,15 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   // Optional: cap to ≤ 4 points for solver stability/perf
   contacts = reduceToFour(contacts);
 
+  m.normal = mNormal;
+  m.penetration = std::max(epa.penetration, 0.0f);
   for (auto &v : contacts) {
+
     glm::vec3 contactB = v - m.normal * m.penetration;
     glm::vec3 contactA = v;
 
     m.points.push_back({contactA, contactB});
   }
 
-  m.normal = mNormal;
-  m.penetration = std::max(epa.penetration, 0.0f);
   return m;
 }
