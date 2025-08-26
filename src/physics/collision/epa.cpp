@@ -252,8 +252,6 @@ CollisionResult EPA(const Collider &a, const Collider &b,
       // we've found the minimum penetration
       CollisionResult result;
       calculateContactPoint(result, closestEPAFace, vertices);
-      // TODO: there's some sort of memory corruption bug since
-      // closestEPAFace.normal is not normalized!!
       std::cout << "Closest face normal before use: ("
                 << closestEPAFace.normal.x << "," << closestEPAFace.normal.y
                 << "," << closestEPAFace.normal.z << ") "

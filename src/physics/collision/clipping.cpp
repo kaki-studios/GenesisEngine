@@ -20,8 +20,12 @@ inline std::vector<glm::vec3> getWorldFaceVerts(const ICollider &h,
   Face f = h.getFace(faceIdx);
   std::vector<glm::vec3> out;
   out.reserve(f.indices.size());
-  for (int idx : f.indices)
-    out.push_back(h.getVertex(idx));
+  for (int idx : f.indices) {
+    auto vert = h.getVertex(idx);
+    out.push_back(vert);
+    std::cout << "vertex " << idx << " for face: " << faceIdx << ": (" << vert.x
+              << "), (" << vert.y << "), (" << vert.z << ")\n";
+  }
   return out;
 }
 
@@ -181,12 +185,12 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
 
   // Decide reference vs incident:
   // Choose the collider that has a face most aligned with nEPA as reference.
-  int aRef = findFaceMostAligned(A, nEPA);
+  int aRef = findFaceMostAligned(A, -nEPA);
   int bRef = findFaceMostAligned(
-      B, -nEPA); // if B is reference, its outward normal aligns with -nEPA
+      B, nEPA); // if B is reference, its outward normal aligns with -nEPA
 
-  float aAlign = glm::dot(A.getFace(aRef).normal, nEPA);
-  float bAlign = glm::dot(B.getFace(bRef).normal, -nEPA);
+  float aAlign = glm::dot(A.getFace(aRef).normal, -nEPA);
+  float bAlign = glm::dot(B.getFace(bRef).normal, nEPA);
 
   int refIdx = aRef;
   int incIdx = -1;
@@ -204,8 +208,8 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   }
 
   // Incident face is the one most opposed to manifold normal (== aligned with
-  // -mNormal).
-  incIdx = findFaceMostAligned(*INC, -mNormal);
+  // -mNormal). flipped bc don't work
+  incIdx = findFaceMostAligned(*INC, mNormal);
 
   // World-space polygons
   std::vector<glm::vec3> refVerts =

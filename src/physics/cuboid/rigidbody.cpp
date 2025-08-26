@@ -90,7 +90,7 @@ void RigidbodySystem::Init(App *app) {
 }
 
 const int NUM_SUBSTEPS = 20;
-const int NUM_POS_ITERS = 2;
+const int NUM_POS_ITERS = 1;
 
 void RigidbodySystem::Update(double dt) {
   debug->ClearCollisions();

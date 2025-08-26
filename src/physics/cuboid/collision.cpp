@@ -190,7 +190,9 @@ const float COLLISION_COMPLIANCE = 1e-6;
 void SolvePositions(CollisionResult collisionInfo,
                     ECS::Coordinator *coordinator, float h) {
   ECS::Entity e1 = collisionInfo.bodyA;
+  std::cout << "e1: " << e1 << "\n";
   ECS::Entity e2 = collisionInfo.bodyB;
+  std::cout << "e2: " << e2 << "\n";
   auto &rb1 = coordinator->GetComponent<Rigidbody>(e1);
   auto &rb2 = coordinator->GetComponent<Rigidbody>(e2);
   auto &t1 = coordinator->GetComponent<Transform>(e1);
@@ -209,9 +211,9 @@ void SolvePositions(CollisionResult collisionInfo,
   glm::vec3 r2 = collisionInfo.contactB;
   glm::vec3 p2 = t2.position + (t2.rotation * collisionInfo.contactB);
   std::cout << "old penetration" << collisionInfo.penetration << "\n";
-  collisionInfo.penetration = glm::dot((p1 - p2), collisionInfo.normal);
+  collisionInfo.penetration = glm::dot((p2 - p1), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
-  if (collisionInfo.penetration <= 0) {
+  if (collisionInfo.penetration >= 0) {
     return;
   }
   //
@@ -219,8 +221,10 @@ void SolvePositions(CollisionResult collisionInfo,
   // glm::vec3 r1 = collisionInfo.contactA;
   // glm::vec3 r2 = collisionInfo.contactB;
 
-  // std::cout << "r1: " << r1.x << ", " << r1.y << ", " << r1.z << "\n";
-  // std::cout << "r2: " << r2.x << ", " << r2.y << ", " << r2.z << "\n";
+  std::cout << "p1: " << p1.x << ", " << p1.y << ", " << p1.z << "\n";
+  std::cout << "p2: " << p2.x << ", " << p2.y << ", " << p2.z << "\n";
+  std::cout << "r1: " << r1.x << ", " << r1.y << ", " << r1.z << "\n";
+  std::cout << "r2: " << r2.x << ", " << r2.y << ", " << r2.z << "\n";
 
   // generalized inverse masses
   glm::mat3 R1 = glm::mat3_cast(t1.rotation);
@@ -246,10 +250,8 @@ void SolvePositions(CollisionResult collisionInfo,
   float dl =
       (-collisionInfo.penetration - aHat * collisionInfo.lagrangeMultiplier) /
       (gim1 + gim2 + aHat);
-  // std::cout << "dl: " << dl << "\n";
+  std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
-  collisionInfo.lagrangeMultiplier =
-      glm::max(0.0f, collisionInfo.lagrangeMultiplier);
   // std::cout << "lambda" << collisionInfo.lagrangeMultiplier << "\n";
 
   glm::vec3 positionalImpulse = dl * collisionInfo.normal;
@@ -268,10 +270,9 @@ void SolvePositions(CollisionResult collisionInfo,
 
   // idk what to do with this (maybe store??)
   glm::vec3 collisionForce =
-      collisionInfo.lagrangeMultiplier * (collisionInfo.normal / (h * h));
-  // std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
-  //           << " and penetration: " << collisionInfo.penetration <<
-  //           std::endl;
+      (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
+  std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
+            << " and penetration: " << collisionInfo.penetration << std::endl;
 }
 
 void SolveVelocities(CollisionResult collisionInfo,

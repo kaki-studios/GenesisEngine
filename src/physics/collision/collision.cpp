@@ -48,7 +48,7 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
       // if (m.points.size() == 0) {
       //   collisions.push_back(collision);
       //   continue;
-      // }
+      //
 
       for (auto &point : m.points) {
         glm::vec3 pA = point.positionA;

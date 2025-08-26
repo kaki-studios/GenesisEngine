@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   App app(1920, 1080);
   // App app(800, 600);
 
-  std::array<ECS::Entity, 2> entities;
+  std::array<ECS::Entity, 1> entities;
   // these should be somewhere else
   app.coordinator.RegisterComponent<Transform>();
   app.coordinator.RegisterComponent<Cuboid>();
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
   // initialize entities
   for (int i = 0; i < entities.size(); i++) {
     entities[i] = app.coordinator.CreateEntity();
-    glm::vec3 halfExtents = glm::vec3(1.0f, 5.0f, 0.2f);
+    glm::vec3 halfExtents = glm::vec3(2.5f, 2.5f, 2.5f);
     app.coordinator.AddComponent(
         entities[i], Transform{
                          .position = glm::vec3(i * 5.0f, 10.0f, 0.0f),
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
                                  CreateCuboidRB(halfExtents, 1.0f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
-    rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
+    // rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
     // rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
     //  gravity
     rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);

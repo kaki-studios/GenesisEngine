@@ -1,5 +1,6 @@
 #include "cuboid_collider.h"
 #include "physics/collision/collider.h"
+#include <iostream>
 #include <vector>
 
 CuboidCollider::CuboidCollider(const glm::vec3 &hExt) : halfExtents(hExt) {
@@ -24,8 +25,8 @@ int const CuboidCollider::getFaceCount() const { return 6; }
 Face const CuboidCollider::getFace(int i) const {
   // ccw
   static const int faceIndices[6][4] = {
-      {1, 3, 7, 5}, // +X
-      {0, 4, 6, 2}, // -X
+      {1, 5, 7, 3}, // +X
+      {0, 2, 6, 4}, // -X
       {7, 3, 2, 6}, // +Y
       {5, 4, 0, 1}, // -Y
       {4, 5, 7, 6}, // +Z
@@ -36,7 +37,7 @@ Face const CuboidCollider::getFace(int i) const {
 
   Face f;
   f.normal = rotation * normals[i];
-  f.indices.assign(&faceIndices[i][0], &faceIndices[i][3]);
+  f.indices.assign(&faceIndices[i][0], &faceIndices[i][4]);
   return f;
 }
 
