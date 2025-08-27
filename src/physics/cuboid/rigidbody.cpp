@@ -205,15 +205,15 @@ void RigidbodySystem::Update(double dt) {
       auto &transform = app->coordinator.GetComponent<Transform>(entity);
       auto &rb = app->coordinator.GetComponent<Rigidbody>(entity);
 
-      rb.linearVelocity =
-          (transform.position - rb.prevPosition) * float(1.0 / h);
+      // rb.linearVelocity =
+      //     (transform.position - rb.prevPosition) * float(1.0 / h);
+
+      rb.linearVelocity += (transform.position -
+                            (rb.prevPosition + rb.linearVelocity * float(h))) *
+                           float(1.0 / h);
       glm::quat dq = transform.rotation * glm::inverse(rb.prevRotation);
       rb.angularVelocity = 2.0f * glm::vec3(dq.x, dq.y, dq.z) * float(1.0 / h);
-
       rb.angularVelocity = dq.w >= 0 ? rb.angularVelocity : -rb.angularVelocity;
-      // std::printf("entity %d position: %f,%f,%f\n", entity,
-      //             transform.position.x, transform.position.y,
-      //             transform.position.z);
     }
     for (auto &collision : collisions) {
       SolveVelocities(collision, &app->coordinator, h);
