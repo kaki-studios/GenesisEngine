@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
   }
   // ground
   CreateWalls(&app);
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 1; i++) {
     ECS::Entity ground = app.coordinator.CreateEntity();
     app.coordinator.AddComponent(
         ground, Transform{

@@ -214,6 +214,7 @@ void SolvePositions(CollisionResult collisionInfo,
   collisionInfo.penetration = glm::dot((p2 - p1), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
   if (collisionInfo.penetration >= 0) {
+    std::cout << "no penetration detected, returning!!\n";
     return;
   }
   //
@@ -252,6 +253,8 @@ void SolvePositions(CollisionResult collisionInfo,
       (gim1 + gim2 + aHat);
   std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
+  collisionInfo.lagrangeMultiplier =
+      glm::max(0.0f, collisionInfo.lagrangeMultiplier);
   // std::cout << "lambda" << collisionInfo.lagrangeMultiplier << "\n";
 
   glm::vec3 positionalImpulse = dl * collisionInfo.normal;

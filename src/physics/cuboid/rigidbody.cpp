@@ -131,8 +131,28 @@ void RigidbodySystem::Update(double dt) {
       auto &rb = app->coordinator.GetComponent<Rigidbody>(entity);
       // integrate positions and velocities
       rb.prevPosition = transform.position;
-      rb.linearVelocity += float(h) * rb.extForce * rb.invMass;
-      transform.position += float(h) * rb.linearVelocity;
+
+      auto update = (rb.extForce * rb.invMass) * float(h);
+
+      if (entity == 0) {
+        std::cout << "--------info--------\n";
+        std::cout << "linear velocity for entity: " << entity << ": "
+                  << rb.linearVelocity.x << ", " << rb.linearVelocity.y << ", "
+                  << rb.linearVelocity.z << "\n";
+      }
+      rb.linearVelocity += (rb.extForce * rb.invMass) * float(h);
+      // rb.linearVelocity += update;
+      if (entity == 0) {
+        std::cout << "linear velocity for entity: " << entity << ": "
+                  << rb.linearVelocity.x << ", " << rb.linearVelocity.y << ", "
+                  << rb.linearVelocity.z << "\n";
+        std::cout << "extForce for entity " << entity << ": " << rb.extForce.x
+                  << ", " << rb.extForce.y << ", " << rb.extForce.z << "\n";
+
+        std::cout << "linear velocity update for entity " << entity << ": "
+                  << update.x << ", " << update.y << ", " << update.z << "\n";
+      }
+      transform.position += rb.linearVelocity * float(h);
 
       transform.rotation = glm::normalize(transform.rotation);
 

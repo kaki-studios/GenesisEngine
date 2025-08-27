@@ -1,7 +1,7 @@
 #include "collider.h"
 
 class CuboidCollider : public ICollider {
-  glm::vec3 halfExtents;
+  glm::dvec3 halfExtents;
 
 public:
   CuboidCollider(const glm::vec3 &halfExtents);
