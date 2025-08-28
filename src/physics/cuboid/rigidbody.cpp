@@ -8,11 +8,7 @@
 #include "glm/geometric.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/matrix.hpp"
-#include <cmath>
-#include <cstdio>
-#include <cstdlib>
 #include <iostream>
-#include <iterator>
 #include <vector>
 
 void printMat3(const glm::mat3 &mat) {
@@ -43,7 +39,7 @@ Rigidbody CreateSB() {
   return Rigidbody{
       .prevPosition = glm::vec3(0),
       .prevRotation = glm::vec3(0),
-      .density = 0.0f,
+      .density = 1.0f,
       .invMass = 0.0f, // this makes it unmovable, implies infinite mass
       .linearVelocity = glm::vec3(0),
       .angularVelocity = glm::vec3(0),
@@ -132,26 +128,7 @@ void RigidbodySystem::Update(double dt) {
       // integrate positions and velocities
       rb.prevPosition = transform.position;
 
-      auto update = (rb.extForce * rb.invMass) * float(h);
-
-      if (entity == 0) {
-        std::cout << "--------info--------\n";
-        std::cout << "linear velocity for entity: " << entity << ": "
-                  << rb.linearVelocity.x << ", " << rb.linearVelocity.y << ", "
-                  << rb.linearVelocity.z << "\n";
-      }
       rb.linearVelocity += (rb.extForce * rb.invMass) * float(h);
-      // rb.linearVelocity += update;
-      if (entity == 0) {
-        std::cout << "linear velocity for entity: " << entity << ": "
-                  << rb.linearVelocity.x << ", " << rb.linearVelocity.y << ", "
-                  << rb.linearVelocity.z << "\n";
-        std::cout << "extForce for entity " << entity << ": " << rb.extForce.x
-                  << ", " << rb.extForce.y << ", " << rb.extForce.z << "\n";
-
-        std::cout << "linear velocity update for entity " << entity << ": "
-                  << update.x << ", " << update.y << ", " << update.z << "\n";
-      }
       transform.position += rb.linearVelocity * float(h);
 
       transform.rotation = glm::normalize(transform.rotation);
@@ -205,9 +182,12 @@ void RigidbodySystem::Update(double dt) {
       auto &transform = app->coordinator.GetComponent<Transform>(entity);
       auto &rb = app->coordinator.GetComponent<Rigidbody>(entity);
 
-      // rb.linearVelocity =
-      //     (transform.position - rb.prevPosition) * float(1.0 / h);
+      // old version, it's according to the paper but doesn't work properly with
+      // gravity
+      //  rb.linearVelocity =
+      //      (transform.position - rb.prevPosition) * float(1.0 / h);
 
+      // new version, works with gravity but idk how accurate it is
       rb.linearVelocity += (transform.position -
                             (rb.prevPosition + rb.linearVelocity * float(h))) *
                            float(1.0 / h);
@@ -216,7 +196,7 @@ void RigidbodySystem::Update(double dt) {
       rb.angularVelocity = dq.w >= 0 ? rb.angularVelocity : -rb.angularVelocity;
     }
     for (auto &collision : collisions) {
-      SolveVelocities(collision, &app->coordinator, h);
+      // SolveVelocities(collision, &app->coordinator, h);
     }
     debug->SetCollisions(collisions);
   }

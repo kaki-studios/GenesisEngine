@@ -1,4 +1,6 @@
 #include "integration.h"
+#include "SDL3/SDL_error.h"
+#include "bgfx/defines.h"
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_properties.h>
 #include <SDL3/SDL_video.h>
@@ -77,11 +79,16 @@ void IntegrateToBGFX(SDL_Window *window) {
   init.debug = false;
   init.platformData = pd;
   int width, height;
-  SDL_GetWindowSizeInPixels(window, &width, &height);
+  bool success = SDL_GetWindowSizeInPixels(window, &width, &height);
+  if (!success) {
+    std::cout << "sdl error: couldn't get screen size:\n";
+    std::cout << SDL_GetError() << "\n";
+    exit(1);
+  }
   std::cout << "Width: " << width << ", Height: " << height << "\n";
   init.resolution.width = (uint32_t)width;
   init.resolution.height = (uint32_t)height;
-  init.resolution.reset = BGFX_RESET_VSYNC;
+  init.resolution.reset = BGFX_RESET_VSYNC | BGFX_RESET_HIDPI;
 #ifndef NDEBUG
   init.type = bgfx::RendererType::OpenGL;
   std::cout << "debug build" << std::endl;

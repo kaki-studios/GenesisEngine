@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   App app(1920, 1080);
   // App app(800, 600);
 
-  std::array<ECS::Entity, 1> entities;
+  std::array<ECS::Entity, 2> entities;
   // these should be somewhere else
   app.coordinator.RegisterComponent<Transform>();
   app.coordinator.RegisterComponent<Cuboid>();
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
   // initialize entities
   for (int i = 0; i < entities.size(); i++) {
     entities[i] = app.coordinator.CreateEntity();
-    glm::vec3 halfExtents = glm::vec3(2.5f, 2.5f, 2.5f);
+    glm::vec3 halfExtents = glm::vec3(2.5f, 2.5f + i, 2.5f + i);
     app.coordinator.AddComponent(
         entities[i], Transform{
                          .position = glm::vec3(i * 5.0f, 10.0f, 0.0f),
@@ -96,8 +96,8 @@ int main(int argc, char *argv[]) {
                                  CreateCuboidRB(halfExtents, 1.0f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
-    // rb.angularVelocity = glm::vec3(1.0, 0.1, 0.0);
-    // rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
+    rb.angularVelocity = glm::vec3(100.0, 0.1, float(i) * 10);
+    rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
     //  gravity
     rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
   }
@@ -137,7 +137,11 @@ int main(int argc, char *argv[]) {
 
   std::cout << "App starting..." << std::endl;
   bgfx::setDebug(BGFX_DEBUG_STATS);
-  // these should be in app
+  // these should be in app (ideally):
+  // register systems to app (including when to call the systems)
+  // app registers systems to ECS
+  // app calls the systems appropriately
+  // problem: systems might need args, can't be made generic
   double now, last, deltaTime;
   now = SDL_GetTicks();
   last = now;
@@ -165,6 +169,8 @@ int main(int argc, char *argv[]) {
     accumulator += deltaTime;
     while (accumulator >= H) {
       if (!state.mouseButtonsDown[SDL_BUTTON_LEFT]) {
+        // NOTE: maybe create seperate physics thread, rendering thread (read
+        // bgfx docs for that), etc.
         rbSystem->Update(H);
       }
 
@@ -174,15 +180,6 @@ int main(int argc, char *argv[]) {
     if (!paused) {
       cameraSystem->Update(deltaTime);
     }
-    auto &transform = app.coordinator.GetComponent<Transform>(entities[0]);
-    auto &rigidbody = app.coordinator.GetComponent<Rigidbody>(entities[0]);
-    std::cout << "Position: (" << transform.position.x << "), ("
-              << transform.position.y << "), (" << transform.position.z
-              << ")\n";
-
-    std::cout << "Velocity: (" << rigidbody.linearVelocity.x << "), ("
-              << rigidbody.linearVelocity.y << "), ("
-              << rigidbody.linearVelocity.z << ")\n";
     cubeRenderer->Update();
 
     lastKeyState = state.keysDown[SDLK_ESCAPE];

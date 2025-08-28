@@ -2,6 +2,7 @@
 #include "cube_renderer.h"
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_keycode.h>
+#include <algorithm>
 #include <glm/common.hpp>
 #include <glm/ext/quaternion_trigonometric.hpp>
 #include <glm/geometric.hpp>
@@ -35,8 +36,10 @@ void CameraSystem::Update(float dt) {
     camera.yaw -= inputState.mouseDeltaX * camera.moveSpeed * 0.001;
     // camera.pitch = glm::mod(camera.pitch, glm::pi<float>());
     camera.yaw = wrapFloat(camera.yaw, 0, 2 * glm::pi<float>());
-    camera.pitch = wrapFloat(camera.pitch, -0.5 * glm::pi<float>(),
-                             0.5 * glm::pi<float>());
+    // camera.pitch = wrapFloat(camera.pitch, -0.5 * glm::pi<float>(),
+    //                          0.5 * glm::pi<float>());
+    camera.pitch = std::clamp(camera.pitch, -0.5f * glm::pi<float>(),
+                              0.5f * glm::pi<float>());
 
     transform.rotation = glm::angleAxis(camera.yaw, glm::vec3(0, 1, 0)) *
                          glm::angleAxis(camera.pitch, glm::vec3(1, 0, 0));

@@ -2,7 +2,10 @@
 
 - [x] Game loop (APIs etc.) (kind of)
 - [x] ECS
-- [X] Renderer
+- [ ] Renderer
+    - [X] Minimal cuboid renderer
+    - [ ] Mesh renderer
+    - [ ] Proper shading
 - [ ] ImGui integration
 - [ ] Physics Engine (XPBD)
 
@@ -10,7 +13,8 @@
 - [ ] Camera controls and debugging
 - [ ] Collisions working properly
     - [ ] Study XPBD more since the collision resolution is wrong.
-        - [ ] Apply slop
+        - [ ] Warm starting (store lagrangeMultiplier across frames)
+        - [ ] Apply slop (maybe?)
     - [X] Recompute collision penetration per substep
         - [X] In narrowphase: transform collsion points to bodies' local space
         - [X] In solver: transform them back to global space and recompute the penetration
@@ -19,5 +23,7 @@
 - [X] Replace SAT collision logic with gjk + epa collision logic
 
 ## Bugs
-- [ ] works in wayland only if "-DCMAKE_BUILD_TYPE=Debug" is not set (FIX: set -DCMAKE_BUILD_TYPE=RelWithDebInfo)
+- [ ] Two colliding cuboid rigidbodies produce errors in sutherland-hogdman and gjk
+- [ ] Angular velocity is not properly integrated!! (probably constraints interfering)
+- [X] works in wayland only if "-DCMAKE_BUILD_TYPE=Debug" is not set (FIXED: use opengl in debug builds)
 - [ ] works in x11 only if "-DCMAKE_BUILD_TYPE=Debug" is set

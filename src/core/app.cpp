@@ -1,4 +1,5 @@
 #include "app.h"
+#include "bgfx/defines.h"
 
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_events.h>
@@ -73,12 +74,19 @@ void App::Update() {
       break;
     }
     case SDL_EVENT_WINDOW_RESIZED: {
+      std::cout << "window resize detected!\n";
 
-      int newWidth = currentEvent.window.data1;
-      int newHeight = currentEvent.window.data2;
+      // int newWidth = currentEvent.window.data1;
+      // int newHeight = currentEvent.window.data2;
+      int newWidth;
+      int newHeight;
+      // TODO: error checking
+      SDL_GetWindowSizeInPixels(window, &newWidth, &newHeight);
+      std::cout << "new dims: (WxH): " << newWidth << "x" << newHeight << "\n";
 
       // Update bgfx backbuffer size
-      bgfx::reset((uint32_t)newWidth, (uint32_t)newHeight, BGFX_RESET_VSYNC);
+      bgfx::reset((uint32_t)newWidth, (uint32_t)newHeight,
+                  BGFX_RESET_VSYNC | BGFX_RESET_HIDPI);
       break;
     }
     case SDL_EVENT_KEY_DOWN: {
