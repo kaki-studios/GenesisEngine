@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     glm::vec3 halfExtents = glm::vec3(2.5f, 2.5f + i, 2.5f + i);
     app.coordinator.AddComponent(
         entities[i], Transform{
-                         .position = glm::vec3(i * 5.0f, 10.0f, 0.0f),
+                         .position = glm::vec3(i * 15.0f, 10.0f, 0.0f),
                          .rotation = glm::identity<glm::quat>(),
                      });
 
