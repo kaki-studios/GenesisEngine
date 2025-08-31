@@ -23,7 +23,7 @@
 - [X] Replace SAT collision logic with gjk + epa collision logic
 
 ## Bugs
-- [ ] Two colliding cuboid rigidbodies produce errors in sutherland-hogdman and gjk
+- [ ] Two colliding cuboid rigidbodies produce errors in sutherland-hogdman (degenerate) and gjk
 - [ ] Angular velocity is not properly integrated!! (probably constraints interfering)
 - [X] works in wayland only if "-DCMAKE_BUILD_TYPE=Debug" is not set (FIXED: use opengl in debug builds)
 - [ ] works in x11 only if "-DCMAKE_BUILD_TYPE=Debug" is set
