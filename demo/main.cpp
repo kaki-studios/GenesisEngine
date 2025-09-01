@@ -93,10 +93,10 @@ int main(int argc, char *argv[]) {
                                  Collider(CuboidCollider(halfExtents)));
 
     app.coordinator.AddComponent(entities[i],
-                                 CreateCuboidRB(halfExtents, 1.0f));
+                                 CreateCuboidRB(halfExtents, 0.5f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
-    rb.angularVelocity = glm::vec3(100.0, 0.1, float(i) * 10);
+    rb.angularVelocity = glm::vec3(5.0, 0.1, float(i) * 2.5);
     rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
     //  gravity
     // rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);

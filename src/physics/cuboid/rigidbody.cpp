@@ -27,11 +27,12 @@ glm::mat3 ComputeCuboidInvInertia(glm::vec3 dims, float density) {
   float z_sqr = dims.z * dims.z;
   float mass = volume * density;
 
-  glm::mat3 invInertia = {
-      (12.0f) / (mass * (y_sqr + z_sqr)), 0.0f, 0.0f, 0.0f,
-      (12.0f) / (mass * (x_sqr + z_sqr)), 0.0f, 0.0f, 0.0f,
-      (12.0f) / (mass * (y_sqr + x_sqr)),
-  };
+  glm::mat3 invInertia(0.0f);
+  invInertia[0][0] = 12.0f / (mass * (y_sqr + z_sqr));
+  invInertia[1][1] = 12.0f / (mass * (x_sqr + z_sqr));
+  invInertia[2][2] = 12.0f / (mass * (x_sqr + y_sqr));
+  std::cout << "invInertia determinant:" << glm::determinant(invInertia)
+            << "\n";
   return invInertia;
 }
 
@@ -138,17 +139,27 @@ void RigidbodySystem::Update(double dt) {
       glm::mat3 R = glm::mat3_cast(transform.rotation);
       glm::mat3 worldInvInertia = R * (rb.invInertia * glm::transpose(R));
 
-      if (glm::determinant(worldInvInertia) < 1e-6f) {
+      if (glm::determinant(worldInvInertia) < 1e-12f) {
         // probably a staticbody
         continue;
       }
       glm::mat3 worldInertia = glm::inverse(worldInvInertia);
       // w is omega:
       // w <- w + h*I^-1(T_ext-(w x (Iw)))
+      if (entity == 0) {
+        std::cout << "entity 0 angularVelocity before: " << rb.angularVelocity.x
+                  << ", " << rb.angularVelocity.y << ", "
+                  << rb.angularVelocity.z << "\n";
+      }
       rb.angularVelocity +=
           float(h) * worldInvInertia *
           (rb.extTorque - (glm::cross(rb.angularVelocity,
                                       (worldInertia * rb.angularVelocity))));
+      if (entity == 0) {
+        std::cout << "entity 0 angularVelocity after: " << rb.angularVelocity.x
+                  << ", " << rb.angularVelocity.y << ", "
+                  << rb.angularVelocity.z << "\n";
+      }
 
       transform.rotation += float(h) * 0.5f *
                             glm::quat(0.0, rb.angularVelocity) *
@@ -192,8 +203,19 @@ void RigidbodySystem::Update(double dt) {
                             (rb.prevPosition + rb.linearVelocity * float(h))) *
                            float(1.0 / h);
       glm::quat dq = transform.rotation * glm::inverse(rb.prevRotation);
+
+      if (entity == 0) {
+        std::cout << "entity 0 angularVelocity before recomputed: "
+                  << rb.angularVelocity.x << ", " << rb.angularVelocity.y
+                  << ", " << rb.angularVelocity.z << "\n";
+      }
       rb.angularVelocity = 2.0f * glm::vec3(dq.x, dq.y, dq.z) * float(1.0 / h);
       rb.angularVelocity = dq.w >= 0 ? rb.angularVelocity : -rb.angularVelocity;
+      if (entity == 0) {
+        std::cout << "entity 0 angularVelocity after recomputed: "
+                  << rb.angularVelocity.x << ", " << rb.angularVelocity.y
+                  << ", " << rb.angularVelocity.z << "\n";
+      }
     }
     for (auto &collision : collisions) {
       // SolveVelocities(collision, &app->coordinator, h);
