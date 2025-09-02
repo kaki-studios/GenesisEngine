@@ -243,6 +243,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
     std::cout << "no contacts, Degenerate\n";
     m.normal = mNormal;
     m.penetration = std::max(epa.penetration, 0.0f);
+    m.points.push_back({epa.contactA, epa.contactB});
     return m;
   }
 
