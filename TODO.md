@@ -15,6 +15,7 @@
     - [ ] Study XPBD more since the collision resolution is wrong.
         - [ ] Warm starting (store lagrangeMultiplier across frames)
         - [ ] Apply slop (maybe?)
+        - [ ] Penetration sign isn't consistent across collisions!!!
     - [X] Recompute collision penetration per substep
         - [X] In narrowphase: transform collsion points to bodies' local space
         - [X] In solver: transform them back to global space and recompute the penetration
