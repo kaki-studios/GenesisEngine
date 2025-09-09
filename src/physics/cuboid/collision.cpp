@@ -214,7 +214,11 @@ void SolvePositions(CollisionResult collisionInfo,
   collisionInfo.penetration = -glm::dot((p2 - p1), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
   if (collisionInfo.penetration >= 0) {
-    std::cout << "no penetration detected, returning!!\n";
+    // std::cout << "no penetration detected, returning!!\n";
+    // TODO(IMPORTANT): sometimes penetration sign is wrong and this doesn't fix
+    // it
+    collisionInfo.penetration = -collisionInfo.penetration;
+    collisionInfo.normal = -collisionInfo.normal;
     return;
   }
   //

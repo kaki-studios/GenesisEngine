@@ -174,11 +174,11 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
                                      const CollisionResult &epa) {
 
   ContactManifold m{};
-  if (epa.penetration <= 0.0f)
-    return m;
 
   // EPA normal points B -> A by convention.
   glm::vec3 nEPA = -glm::normalize(epa.normal);
+  // if (epa.penetration <= 0.0f)
+  //   epa.penetration = -epa.penetration;
 
   const ICollider *REF = &A;
   const ICollider *INC = &B;
@@ -242,7 +242,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
     // Here we just return empty points but keep normal & penetration.
     std::cout << "no contacts, Degenerate\n";
     m.normal = mNormal;
-    m.penetration = std::max(epa.penetration, 0.0f);
+    m.penetration = std::max(epa.penetration, -epa.penetration);
     m.points.push_back({epa.contactA, epa.contactB});
     return m;
   }
@@ -251,7 +251,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   contacts = reduceToFour(contacts);
 
   m.normal = mNormal;
-  m.penetration = std::max(epa.penetration, 0.0f);
+  m.penetration = std::max(epa.penetration, -epa.penetration);
   for (auto &v : contacts) {
 
     glm::vec3 contactB = v - m.normal * m.penetration;
