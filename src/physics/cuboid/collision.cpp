@@ -210,16 +210,23 @@ void SolvePositions(CollisionResult collisionInfo,
 
   glm::vec3 r2 = collisionInfo.contactB;
   glm::vec3 p2 = t2.position + (t2.rotation * collisionInfo.contactB);
+
+  if (glm::dot(p2 - p1, collisionInfo.normal) > 0) {
+    collisionInfo.normal = -collisionInfo.normal;
+  }
+
   std::cout << "old penetration" << collisionInfo.penetration << "\n";
+
   collisionInfo.penetration = -glm::dot((p2 - p1), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
-  if (collisionInfo.penetration >= 0) {
-    // std::cout << "no penetration detected, returning!!\n";
+  if (collisionInfo.penetration <= 0) {
+    std::cout << "no penetration detected, returning!!\n";
+    return;
     // TODO(IMPORTANT): sometimes penetration sign is wrong and this doesn't fix
     // it
-    collisionInfo.penetration = -collisionInfo.penetration;
-    collisionInfo.normal = -collisionInfo.normal;
-    return;
+    // std::cout << "Flipping penetration sign!!\n";
+    // collisionInfo.penetration = -collisionInfo.penetration;
+    // collisionInfo.normal = -collisionInfo.normal;
   }
   //
 
