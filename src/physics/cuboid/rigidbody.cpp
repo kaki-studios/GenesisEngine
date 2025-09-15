@@ -86,7 +86,7 @@ void RigidbodySystem::Init(App *app) {
   app->coordinator.SetSystemSignature<RigidbodySystem>(signature);
 }
 
-const int NUM_SUBSTEPS = 20;
+const int NUM_SUBSTEPS = 1;
 const int NUM_POS_ITERS = 1;
 
 void RigidbodySystem::Update(double dt) {

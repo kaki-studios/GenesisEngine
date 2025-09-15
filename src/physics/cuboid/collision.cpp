@@ -264,8 +264,8 @@ void SolvePositions(CollisionResult collisionInfo,
       (gim1 + gim2 + aHat);
   std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
-  collisionInfo.lagrangeMultiplier =
-      glm::max(0.0f, collisionInfo.lagrangeMultiplier);
+  // collisionInfo.lagrangeMultiplier =
+  //     glm::min(0.0f, collisionInfo.lagrangeMultiplier);
   // std::cout << "lambda" << collisionInfo.lagrangeMultiplier << "\n";
 
   glm::vec3 positionalImpulse = dl * collisionInfo.normal;
@@ -286,7 +286,9 @@ void SolvePositions(CollisionResult collisionInfo,
   glm::vec3 collisionForce =
       (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
   std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
-            << " and penetration: " << collisionInfo.penetration << std::endl;
+            << " and penetration: " << collisionInfo.penetration
+            << "lagrangeMultiplier: " << collisionInfo.lagrangeMultiplier
+            << std::endl;
 }
 
 void SolveVelocities(CollisionResult collisionInfo,
