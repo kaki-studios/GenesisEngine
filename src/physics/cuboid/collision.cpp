@@ -9,6 +9,7 @@
 #include "physics/collision/epa.h"
 #include "rigidbody.h"
 #include <ECS.h>
+#include <cmath>
 #include <cstdio>
 #include <iostream>
 #include <set>
@@ -219,14 +220,10 @@ void SolvePositions(CollisionResult collisionInfo,
 
   collisionInfo.penetration = -glm::dot((p2 - p1), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
+
   if (collisionInfo.penetration <= 0) {
     std::cout << "no penetration detected, returning!!\n";
     return;
-    // TODO(IMPORTANT): sometimes penetration sign is wrong and this doesn't fix
-    // it
-    // std::cout << "Flipping penetration sign!!\n";
-    // collisionInfo.penetration = -collisionInfo.penetration;
-    // collisionInfo.normal = -collisionInfo.normal;
   }
   //
 
@@ -239,14 +236,14 @@ void SolvePositions(CollisionResult collisionInfo,
   std::cout << "r2: " << r2.x << ", " << r2.y << ", " << r2.z << "\n";
 
   // generalized inverse masses
-  glm::mat3 R1 = glm::mat3_cast(t1.rotation);
+  glm::mat3 R1 = glm::mat3_cast(glm::normalize(t1.rotation));
   glm::mat3 globalInvInertia1 = R1 * rb1.invInertia * glm::transpose(R1);
 
   float gim1 = rb1.invMass + glm::dot(glm::cross(r1, collisionInfo.normal),
                                       globalInvInertia1 *
                                           glm::cross(r1, collisionInfo.normal));
 
-  glm::mat3 R2 = glm::mat3_cast(t2.rotation);
+  glm::mat3 R2 = glm::mat3_cast(glm::normalize(t2.rotation));
   glm::mat3 globalInvInertia2 = R2 * rb2.invInertia * glm::transpose(R2);
 
   float gim2 = rb2.invMass + glm::dot(glm::cross(r2, collisionInfo.normal),

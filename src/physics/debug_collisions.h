@@ -9,7 +9,7 @@ struct DebugMarker {};
 class DebugCollisions : public ECS::System {
 public:
   void Init(ECS::Coordinator *coordinator);
-  void SetCollisions(std::vector<CollisionResult> collisions);
+  void SetCollisions(std::vector<CollisionResult> collisions, int iter);
   void ClearCollisions();
 
 private:

@@ -86,7 +86,7 @@ void RigidbodySystem::Init(App *app) {
   app->coordinator.SetSystemSignature<RigidbodySystem>(signature);
 }
 
-const int NUM_SUBSTEPS = 1;
+const int NUM_SUBSTEPS = 20;
 const int NUM_POS_ITERS = 1;
 
 void RigidbodySystem::Update(double dt) {
@@ -98,9 +98,6 @@ void RigidbodySystem::Update(double dt) {
   }
   std::vector<CollisionResult> collisions =
       CollectCollisionPairsNew(mEntities, &app->coordinator);
-  if (collisions.size()) {
-    std::cout << collisions.size() << std::endl;
-  }
   for (auto &collision : collisions) {
     //   auto &rb1 = app->coordinator.GetComponent<Rigidbody>(collision.bodyA);
     //   auto &t1 = app->coordinator.GetComponent<Transform>(collision.bodyA);
@@ -198,8 +195,8 @@ void RigidbodySystem::Update(double dt) {
       rb.angularVelocity = dq.w >= 0 ? rb.angularVelocity : -rb.angularVelocity;
     }
     for (auto &collision : collisions) {
-      // SolveVelocities(collision, &app->coordinator, h);
+      SolveVelocities(collision, &app->coordinator, h);
     }
-    debug->SetCollisions(collisions);
+    debug->SetCollisions(collisions, i);
   }
 }

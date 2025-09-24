@@ -172,6 +172,10 @@ inline std::vector<glm::vec3> reduceToFour(const std::vector<glm::vec3> &pts) {
 
 ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
                                      const CollisionResult &epa) {
+  std::cout << "building contact manifold with epa contact point 1: ("
+            << epa.contactA.x << ", " << epa.contactA.y << ", "
+            << epa.contactA.z << "), and contact point 2: (" << epa.contactB.x
+            << ", " << epa.contactB.y << ", " << epa.contactB.z << ")\n";
 
   ContactManifold m{};
 

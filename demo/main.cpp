@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   App app(1920, 1080);
   // App app(800, 600);
 
-  std::array<ECS::Entity, 2> entities;
+  std::array<ECS::Entity, 1> entities;
   // these should be somewhere else
   app.coordinator.RegisterComponent<Transform>();
   app.coordinator.RegisterComponent<Cuboid>();
@@ -132,7 +132,7 @@ int main(int argc, char *argv[]) {
                                            .fov = 60.0f,
                                            .moveSpeed = 5.0f,
                                            .nearPlane = 0.1f,
-                                           .farPlane = 100.0f,
+                                           .farPlane = 10000.0f,
                                        });
 
   std::cout << "App starting..." << std::endl;
@@ -154,6 +154,12 @@ int main(int argc, char *argv[]) {
   bool paused = false;
 
   while (!app.ShouldClose()) {
+    // for (auto e : entities) {
+    //   auto t = app.coordinator.GetComponent<Transform>(e);
+    //   std::cout << "entity: " << e << "position: (" << t.position.x << ", "
+    //             << t.position.y << ", " << t.position.z << ")\n";
+    // }
+
     deltaTime = (now - last) / 1000.0;
     last = now;
     now = SDL_GetTicks();
