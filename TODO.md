@@ -16,8 +16,9 @@
         - [ ] Warm starting (store lagrangeMultiplier across frames)
         - [ ] Apply slop (maybe?)
         - [ ] Solver injects energy and other bugs??
-            - [ ] Collision detection: wrong contact point locations (check sutherland-hogdman & epa)
-            - [ ] Solver seems to increase penetration at first before seperating the bodies (in 1 frame)??
+            - [X] Collision detection: wrong contact point locations (check sutherland-hogdman & epa)
+            - [X] Solver seems to increase penetration at first before seperating the bodies (in 1 frame)??
+            - [ ] TODO: restitution
     - [X] Recompute collision penetration per substep
         - [X] In narrowphase: transform collsion points to bodies' local space
         - [X] In solver: transform them back to global space and recompute the penetration

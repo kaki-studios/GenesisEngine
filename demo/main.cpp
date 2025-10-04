@@ -96,8 +96,8 @@ int main(int argc, char *argv[]) {
                                  CreateCuboidRB(halfExtents, 0.5f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
-    rb.angularVelocity = glm::vec3(5.0, 0.1, float(i) * 2.5);
-    rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
+    // rb.angularVelocity = glm::vec3(5.0, 0.1, float(i) * 2.5);
+    // rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
     //  gravity
     rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
   }
@@ -154,11 +154,14 @@ int main(int argc, char *argv[]) {
   bool paused = false;
 
   while (!app.ShouldClose()) {
-    // for (auto e : entities) {
-    //   auto t = app.coordinator.GetComponent<Transform>(e);
-    //   std::cout << "entity: " << e << "position: (" << t.position.x << ", "
-    //             << t.position.y << ", " << t.position.z << ")\n";
-    // }
+    for (auto e : entities) {
+      if (e != 0) {
+        continue;
+      }
+      auto t = app.coordinator.GetComponent<Transform>(e);
+      std::cout << "entity: " << e << " position: (" << t.position.x << ", "
+                << t.position.y << ", " << t.position.z << ")\n";
+    }
 
     deltaTime = (now - last) / 1000.0;
     last = now;

@@ -212,28 +212,26 @@ void SolvePositions(CollisionResult collisionInfo,
   glm::vec3 r2 = collisionInfo.contactB;
   glm::vec3 p2 = t2.position + (t2.rotation * collisionInfo.contactB);
 
-  if (glm::dot(p2 - p1, collisionInfo.normal) > 0) {
-    collisionInfo.normal = -collisionInfo.normal;
-  }
+  // if (glm::dot(p2 - p1, collisionInfo.normal) > 0) {
+  //   collisionInfo.normal = -collisionInfo.normal;
+  // }
 
   std::cout << "old penetration" << collisionInfo.penetration << "\n";
 
-  collisionInfo.penetration = -glm::dot((p2 - p1), collisionInfo.normal);
+  collisionInfo.penetration = glm::dot((p2 - p1), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
 
-  if (collisionInfo.penetration <= 0) {
+  if (collisionInfo.penetration >= 0) {
     std::cout << "no penetration detected, returning!!\n";
     return;
   }
-  //
-
   // glm::vec3 r1 = collisionInfo.contactA;
   // glm::vec3 r2 = collisionInfo.contactB;
 
-  std::cout << "p1: " << p1.x << ", " << p1.y << ", " << p1.z << "\n";
-  std::cout << "p2: " << p2.x << ", " << p2.y << ", " << p2.z << "\n";
-  std::cout << "r1: " << r1.x << ", " << r1.y << ", " << r1.z << "\n";
-  std::cout << "r2: " << r2.x << ", " << r2.y << ", " << r2.z << "\n";
+  // std::cout << "p1: " << p1.x << ", " << p1.y << ", " << p1.z << "\n";
+  // std::cout << "p2: " << p2.x << ", " << p2.y << ", " << p2.z << "\n";
+  // std::cout << "r1: " << r1.x << ", " << r1.y << ", " << r1.z << "\n";
+  // std::cout << "r2: " << r2.x << ", " << r2.y << ", " << r2.z << "\n";
 
   // generalized inverse masses
   glm::mat3 R1 = glm::mat3_cast(glm::normalize(t1.rotation));

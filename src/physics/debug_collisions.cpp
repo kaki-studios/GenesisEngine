@@ -36,28 +36,34 @@ void DebugCollisions::SetCollisions(std::vector<CollisionResult> collisions,
     auto t1 = coordinator->GetComponent<Transform>(collision.bodyA);
     auto t2 = coordinator->GetComponent<Transform>(collision.bodyB);
     ECS::Entity entity = coordinator->CreateEntity();
-    const float strecthFactor = 10.0f;
+    const float strecthFactor = 1.0f;
     glm::vec3 contact = (collision.contactA + collision.contactB) * 0.5f;
-    // std::cout << "Contact Point: " << contact.x << ", " << contact.y << ", "
-    // << contact.z << "\n"; std::cout << "Between entity " << collision.bodyA
-    // << " and entity " << collision.bodyB << "\n"; std::cout << "Entity 1 pos:
-    // " << t1.position.x << ", " << t1.position.y << ", " << t1.position.z <<
-    // "\n"; std::cout << "Entity 2 pos: " << t2.position.x << ", " <<
-    // t2.position.y << ", " << t2.position.z << "\n";
+    std::cout << "Contact Point: " << contact.x << ", " << contact.y << ", "
+              << contact.z << "\n";
+    std::cout << "Between entity " << collision.bodyA << " and entity "
+              << collision.bodyB << "\n";
+    // std::cout << "Entity 1 pos:" << t1.position.x << "," << t1.position.y <<
+    // ","
+    //           << t1.position.z << "\n ";
+    // std::cout << "Entity 2 pos: " << t2.position.x << ", " << t2.position.y
+    //           << ", " << t2.position.z << "\n";
 
-    glm::vec3 p1 = t1.position + (t1.rotation * collision.contactA);
-    glm::vec3 p2 = t2.position + (t2.rotation * collision.contactB);
-    float penetration = glm::abs(glm::dot(p2 - p1, collision.normal));
+    // glm::vec3 p1 = t1.position + (t1.rotation * collision.contactA);
+    glm::vec3 p1 = collision.contactA;
+    // glm::vec3 p2 = t2.position + (t2.rotation * collision.contactB);
+    glm::vec3 p2 = collision.contactB;
+    // float penetration = glm::abs(glm::dot(p2 - p1, collision.normal));
+    std::cout << "Penetration: " << collision.penetration << "\n";
 
-    glm::vec3 pos = p1 + p2 / 2.0f;
+    glm::vec3 pos = contact;
     coordinator->AddComponent(entity, DebugMarker{});
     coordinator->AddComponent(
-        entity,
-        Cuboid{
-            .halfExtents = glm::vec3(0.1, 0.1, penetration * strecthFactor),
-            .color =
-                glm::vec3((float(iter) / 20.0f), float(20 - iter) / 20.0f, 0.0),
-        });
+        entity, Cuboid{
+                    .halfExtents = glm::vec3(
+                        0.1, 0.1, collision.penetration * strecthFactor),
+                    .color = glm::vec3((float(iter) / 20.0f),
+                                       float(20 - iter) / 20.0f, 0.0),
+                });
     glm::quat dir = glm::quatLookAt(collision.normal, glm::vec3(0.0, 1.0, 0.0));
     coordinator->AddComponent(entity, Transform{
                                           .position = pos,

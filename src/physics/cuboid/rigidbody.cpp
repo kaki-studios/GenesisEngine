@@ -198,5 +198,7 @@ void RigidbodySystem::Update(double dt) {
       SolveVelocities(collision, &app->coordinator, h);
     }
     debug->SetCollisions(collisions, i);
+    std::cout << "end substep\n";
   }
+  std::cout << "end frame\n";
 }
