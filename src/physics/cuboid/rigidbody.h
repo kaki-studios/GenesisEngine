@@ -24,6 +24,9 @@ struct Rigidbody {
   glm::vec3 linearVelocity;
   glm::vec3 angularVelocity; // for xpbd we store angVel instead of angMomentum
 
+  glm::vec3 prevLinearVelocity;
+  glm::vec3 prevAngularVelocity;
+
   glm::vec3 extForce;
   glm::vec3 extTorque;
 

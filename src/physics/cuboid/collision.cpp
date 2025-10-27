@@ -186,7 +186,7 @@ CollisionResult SAT(OBB o1, OBB o2) {
 }
 
 // inverse of stiffness and has units meters/Newton
-const float COLLISION_COMPLIANCE = 1e-6;
+const float COLLISION_COMPLIANCE = 1e-5f;
 
 void SolvePositions(CollisionResult collisionInfo,
                     ECS::Coordinator *coordinator, float h) {
@@ -207,10 +207,13 @@ void SolvePositions(CollisionResult collisionInfo,
   // TODO: static friction (section 3.5 in xpbd)
 
   glm::vec3 r1 = collisionInfo.contactA;
-  glm::vec3 p1 = t1.position + (t1.rotation * collisionInfo.contactA);
+  glm::vec3 p1 = t1.position + t1.rotation * collisionInfo.contactA;
 
   glm::vec3 r2 = collisionInfo.contactB;
-  glm::vec3 p2 = t2.position + (t2.rotation * collisionInfo.contactB);
+  glm::vec3 p2 = t2.position + t2.rotation * collisionInfo.contactB;
+
+  std::cout << "GlobalA recomp: (" << p1.x << "), (" << p1.y << "), (" << p1.z
+            << ")\n";
 
   // if (glm::dot(p2 - p1, collisionInfo.normal) > 0) {
   //   collisionInfo.normal = -collisionInfo.normal;
@@ -218,12 +221,12 @@ void SolvePositions(CollisionResult collisionInfo,
 
   std::cout << "old penetration" << collisionInfo.penetration << "\n";
 
-  collisionInfo.penetration = glm::dot((p2 - p1), collisionInfo.normal);
+  collisionInfo.penetration = glm::dot((p1 - p2), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
 
   if (collisionInfo.penetration >= 0) {
-    std::cout << "no penetration detected, returning!!\n";
-    return;
+    collisionInfo.penetration *= -1.0f;
+    // return;
   }
   // glm::vec3 r1 = collisionInfo.contactA;
   // glm::vec3 r2 = collisionInfo.contactB;
@@ -286,6 +289,8 @@ void SolvePositions(CollisionResult collisionInfo,
             << std::endl;
 }
 
+const float RESTITUTION_COEFF = 0.5f;
+
 void SolveVelocities(CollisionResult collisionInfo,
                      ECS::Coordinator *coordinator, float h) {
   auto &rb1 = coordinator->GetComponent<Rigidbody>(collisionInfo.bodyA);
@@ -315,8 +320,17 @@ void SolveVelocities(CollisionResult collisionInfo,
   glm::vec3 fn =
       (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
 
+  glm::vec3 vOld =
+      (rb1.prevLinearVelocity + glm::cross(rb1.prevAngularVelocity, r1)) -
+      (rb2.prevLinearVelocity + glm::cross(rb2.prevAngularVelocity, r2));
+  float vnOld = glm::dot(collisionInfo.normal, vOld);
+  glm::vec3 vtOld = vOld - collisionInfo.normal * vn;
+
   glm::vec3 deltaV = -(glm::normalize(vt)) *
                      glm::min(h * friction * glm::length(fn), glm::length(vt));
+  // deltaV +=
+  //     collisionInfo.normal * (-vn + glm::min(-RESTITUTION_COEFF * vnOld,
+  //     0.0f));
   // maybe apply damping
 
   glm::mat3 R1 = glm::mat3_cast(t1.rotation);

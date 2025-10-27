@@ -62,8 +62,8 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
         std::cout << "reconstructed penetration: " << penetration << "\n";
         std::cout << "distance" << distance << "\n";
 
-        // std::cout << "Point: (" << pA.x << "), (" << pA.y << "), (" << pA.z
-        //           << ")\n";
+        std::cout << "GlobalA: (" << globalA.x << "), (" << globalA.y << "), ("
+                  << globalA.z << ")\n";
         CollisionResult temp;
         temp.valid = true;
         temp.lagrangeMultiplier = 0.0f;

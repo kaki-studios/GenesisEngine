@@ -6,6 +6,7 @@
 #include <utility>
 #include <vector>
 
+// NOTE: check TODO.md
 // NOTE: check:
 // https://github.com/felipeek/raw-physics/blob/master/src/physics/clipping.cpp
 
@@ -73,6 +74,7 @@ clipAgainstPlane(const std::vector<glm::vec3> &poly, const Plane &P,
     if (inA && inB) {
       out.push_back(B);
     } else if (inA && !inB) {
+      // out.push_back(A);
       float t = da / (da - db + 1e-30f);
       out.push_back(A + t * (B - A));
     } else if (!inA && inB) {

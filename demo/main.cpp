@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
                                  Collider(CuboidCollider(halfExtents)));
 
     app.coordinator.AddComponent(entities[i],
-                                 CreateCuboidRB(halfExtents, 0.5f));
+                                 CreateCuboidRB(halfExtents, 1.0f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
     // rb.angularVelocity = glm::vec3(5.0, 0.1, float(i) * 2.5);
@@ -159,8 +159,8 @@ int main(int argc, char *argv[]) {
         continue;
       }
       auto t = app.coordinator.GetComponent<Transform>(e);
-      std::cout << "entity: " << e << " position: (" << t.position.x << ", "
-                << t.position.y << ", " << t.position.z << ")\n";
+      // std::cout << "entity: " << e << " position: (" << t.position.x << ", "
+      //           << t.position.y << ", " << t.position.z << ")\n";
     }
 
     deltaTime = (now - last) / 1000.0;

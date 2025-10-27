@@ -19,6 +19,7 @@
             - [X] Collision detection: wrong contact point locations (check sutherland-hogdman & epa)
             - [X] Solver seems to increase penetration at first before seperating the bodies (in 1 frame)??
             - [ ] TODO: restitution
+            - [ ] Collision detection bug: sutherland-hogdman gives penetration, but after integrating bodies, the penetration goes *down* after recomputing the penetration (0.06 to 0.05) even though it should go up!!
     - [X] Recompute collision penetration per substep
         - [X] In narrowphase: transform collsion points to bodies' local space
         - [X] In solver: transform them back to global space and recompute the penetration

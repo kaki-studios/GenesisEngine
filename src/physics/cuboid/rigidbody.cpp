@@ -179,9 +179,11 @@ void RigidbodySystem::Update(double dt) {
     for (auto &entity : mEntities) {
       auto &transform = app->coordinator.GetComponent<Transform>(entity);
       auto &rb = app->coordinator.GetComponent<Rigidbody>(entity);
+      rb.prevLinearVelocity = rb.linearVelocity;
+      rb.prevAngularVelocity = rb.angularVelocity;
 
-      // old version, it's according to the paper but doesn't work properly with
-      // gravity
+      // old version, it's according to the paper but doesn't work properly
+      // with gravity
       //  rb.linearVelocity =
       //      (transform.position - rb.prevPosition) * float(1.0 / h);
 
@@ -198,7 +200,7 @@ void RigidbodySystem::Update(double dt) {
       SolveVelocities(collision, &app->coordinator, h);
     }
     debug->SetCollisions(collisions, i);
-    std::cout << "end substep\n";
+    // std::cout << "end substep";
   }
-  std::cout << "end frame\n";
+  // std::cout << "end frame\n";
 }
