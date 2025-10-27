@@ -119,9 +119,9 @@ void CubeRenderer::Init(App *app) {
 
   program = bgfx::createProgram(vsh, fsh, true);
 
+  u_lightPos = bgfx::createUniform("u_lightPos", bgfx::UniformType::Vec4);
   u_baseCol = bgfx::createUniform("u_baseCol", bgfx::UniformType::Vec4);
-  u_lightDir = bgfx::createUniform("u_lightDir", bgfx::UniformType::Vec4);
-  bgfx::UniformHandle uniforms[2];
+  u_lightCol = bgfx::createUniform("u_lightCol", bgfx::UniformType::Vec4);
 
   int width, height;
   app->GetWindowDims(&width, &height);
@@ -192,8 +192,10 @@ void CubeRenderer::Update() {
     // submit empty primitive
     bgfx::touch(0);
   }
-  const float lightDir[4] = {0.0f, 1.0f, 0.75f, 0.0f};
-  bgfx::setUniform(u_lightDir, lightDir);
+  const float lightPos[4] = {10.0f, 10.0f, 10.0f, 1.0f};
+  const float lightCol[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+  bgfx::setUniform(u_lightPos, lightPos);
+  bgfx::setUniform(u_lightCol, lightCol);
 
   for (auto const &entity : mEntities) {
     auto &transform = app->coordinator.GetComponent<Transform>(entity);
@@ -238,6 +240,7 @@ CubeRenderer::~CubeRenderer() {
   bgfx::destroy(program);
   bgfx::destroy(cubeVbh);
   bgfx::destroy(u_baseCol);
-  bgfx::destroy(u_lightDir);
+  bgfx::destroy(u_lightPos);
+  bgfx::destroy(u_lightCol);
   std::cout << "destroyed" << std::endl;
 }

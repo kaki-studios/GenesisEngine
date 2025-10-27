@@ -36,7 +36,8 @@ private:
   bgfx::ProgramHandle program;
 
   bgfx::UniformHandle u_baseCol;
-  bgfx::UniformHandle u_lightDir;
+  bgfx::UniformHandle u_lightPos;
+  bgfx::UniformHandle u_lightCol;
 
   std::shared_ptr<CameraRetriever> retriever;
 };
