@@ -9,7 +9,7 @@ struct Plane {
   glm::vec3 normal;
   float d;
   inline float signedDistance(const glm::vec3 &x) const {
-    return glm::dot(normal, x) - d;
+    return glm::dot(normal, x) + d;
   }
 };
 

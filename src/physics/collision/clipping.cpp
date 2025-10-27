@@ -236,7 +236,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
     float sd = refPlane.signedDistance(
         p); // >0 means in front of outward normal (outside)
     std::cout << "sd: " << sd << "\n";
-    if (sd <= eps) {
+    if (sd <= eps || std::abs(sd) < 0.001f) {
       glm::vec3 proj = p - sd * refPlane.normal;
       contacts.push_back(proj);
       // contacts.push_back(p);
@@ -259,9 +259,36 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   m.normal = mNormal;
   m.penetration = std::max(epa.penetration, -epa.penetration);
   for (auto &v : contacts) {
+    // v is the clipped point on the reference face
 
-    glm::vec3 contactB = v - m.normal * m.penetration;
-    glm::vec3 contactA = v;
+    // Cast ray from v along -mNormal (into incident object)
+    // Find where it exits the incident object
+    float penetration = 0.0f;
+
+    // Option A: Test against incident face plane
+    Face incFace = INC->getFace(incIdx);
+    Plane incPlane =
+        makePlane(incFace.normal, INC->getVertex(incFace.indices[0]));
+
+    // Distance from v to incident plane along mNormal
+    float t = -incPlane.signedDistance(v) / glm::dot(mNormal, incPlane.normal);
+    if (t > 0.0f) {
+      penetration = t;
+    }
+    m.penetration = penetration;
+
+    glm::vec3 contactA;
+    glm::vec3 contactB;
+
+    if (REF == &A) {
+
+      contactB = v - m.normal * penetration;
+      contactA = v;
+    } else {
+
+      contactA = v - m.normal * penetration;
+      contactB = v;
+    }
 
     m.points.push_back({contactA, contactB});
   }
