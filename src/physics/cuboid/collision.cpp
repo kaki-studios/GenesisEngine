@@ -221,11 +221,12 @@ void SolvePositions(CollisionResult collisionInfo,
 
   std::cout << "old penetration" << collisionInfo.penetration << "\n";
 
-  collisionInfo.penetration = -glm::dot((p1 - p2), collisionInfo.normal);
+  collisionInfo.penetration = glm::dot((p1 - p2), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
 
-  if (collisionInfo.penetration <= 0) {
-    collisionInfo.penetration *= -1.0f;
+  if (collisionInfo.penetration >= 0.0f) {
+    // collisionInfo.penetration *= -1.0f;
+    std::cout << "rejecting positive penetration!!\n";
     // return;
   }
   // glm::vec3 r1 = collisionInfo.contactA;

@@ -16,11 +16,11 @@ void main() {
   vec3 L = normalize(difference);
 
   
-  float attenuation = 1.0 / (1.0 + (0.005 * distance * distance));
+  float attenuation = 1.0 / (1.0 + (0.0001 * distance * distance));
   // float attenuation = 1.0;
   //map [0,1] to [0.2,1] for ambient lighting
   float ndotl = max(dot(normalize(v_normal), L), 0.2);
-  float diffuse = min(ndotl * attenuation * 2.0, 1.0);
+  float diffuse = min(ndotl * attenuation, 1.0);
   vec3 color = u_lightCol.rgb * u_baseCol.rgb * diffuse;
   
   gl_FragColor = vec4(color, 1.0);

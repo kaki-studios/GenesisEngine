@@ -248,7 +248,6 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
     // Here we just return empty points but keep normal & penetration.
     std::cout << "no contacts, Degenerate\n";
     m.normal = mNormal;
-    m.penetration = std::max(epa.penetration, -epa.penetration);
     m.points.push_back({epa.contactA, epa.contactB});
     return m;
   }
@@ -257,39 +256,31 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   contacts = reduceToFour(contacts);
 
   m.normal = mNormal;
-  m.penetration = std::max(epa.penetration, -epa.penetration);
+
+  // Get the incident face plane
+  Face incFace = INC->getFace(incIdx);
+  Plane incPlane = makePlane(incFace.normal, incVerts[0]);
   for (auto &v : contacts) {
-    // v is the clipped point on the reference face
+    // v is the clipped point on reference face
 
-    // Cast ray from v along -mNormal (into incident object)
-    // Find where it exits the incident object
-    float penetration = 0.0f;
+    // Measure distance from v to incident plane along mNormal
+    // This is the actual penetration at this contact point
+    float distToIncPlane = -incPlane.signedDistance(v);
 
-    // Option A: Test against incident face plane
-    Face incFace = INC->getFace(incIdx);
-    Plane incPlane =
-        makePlane(incFace.normal, INC->getVertex(incFace.indices[0]));
+    // Adjust for the fact we need distance along mNormal, not along incPlane
+    // normal
+    float cosAngle = glm::dot(mNormal, incPlane.normal);
+    float penetration = distToIncPlane / (std::abs(cosAngle) + 1e-6f);
+    penetration = std::max(0.0f, penetration);
 
-    // Distance from v to incident plane along mNormal
-    float t = -incPlane.signedDistance(v) / glm::dot(mNormal, incPlane.normal);
-    if (t > 0.0f) {
-      penetration = t;
-    }
-    m.penetration = penetration;
-
-    glm::vec3 contactA;
-    glm::vec3 contactB;
-
+    glm::vec3 contactA, contactB;
     if (REF == &A) {
-
-      contactB = v - m.normal * penetration;
       contactA = v;
+      contactB = v - mNormal * penetration;
     } else {
-
-      contactA = v - m.normal * penetration;
       contactB = v;
+      contactA = v + mNormal * penetration;
     }
-
     m.points.push_back({contactA, contactB});
   }
 

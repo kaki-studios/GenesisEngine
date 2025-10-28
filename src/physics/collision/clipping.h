@@ -21,7 +21,6 @@ struct ContactPoint {
 struct ContactManifold {
   glm::vec3 normal; // incident -> reference (same direction as EPA normal after
                     // choosing reference)
-  float penetration;                // typically EPA depth
   std::vector<ContactPoint> points; // up to 4
 };
 

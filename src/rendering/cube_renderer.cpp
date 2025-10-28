@@ -192,7 +192,7 @@ void CubeRenderer::Update() {
     // submit empty primitive
     bgfx::touch(0);
   }
-  const float lightPos[4] = {10.0f, 10.0f, 10.0f, 1.0f};
+  const float lightPos[4] = {0.0f, 50.0f, 0.0f, 1.0f};
   const float lightCol[4] = {1.0f, 1.0f, 1.0f, 1.0f};
   bgfx::setUniform(u_lightPos, lightPos);
   bgfx::setUniform(u_lightCol, lightCol);
