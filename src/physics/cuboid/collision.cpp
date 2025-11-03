@@ -186,7 +186,7 @@ CollisionResult SAT(OBB o1, OBB o2) {
 }
 
 // inverse of stiffness and has units meters/Newton
-const float COLLISION_COMPLIANCE = 1e-5f;
+const float COLLISION_COMPLIANCE = 5e-6f;
 
 void SolvePositions(CollisionResult collisionInfo,
                     ECS::Coordinator *coordinator, float h) {
@@ -221,12 +221,12 @@ void SolvePositions(CollisionResult collisionInfo,
 
   std::cout << "old penetration" << collisionInfo.penetration << "\n";
 
-  collisionInfo.penetration = glm::dot((p1 - p2), collisionInfo.normal);
+  collisionInfo.penetration = glm::dot((p2 - p1), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
 
-  if (collisionInfo.penetration >= 0.0f) {
+  if (collisionInfo.penetration <= 0.0f) {
     // collisionInfo.penetration *= -1.0f;
-    std::cout << "rejecting positive penetration!!\n";
+    std::cout << "BUG: penetration is positive\n";
     // return;
   }
   // glm::vec3 r1 = collisionInfo.contactA;
@@ -329,9 +329,8 @@ void SolveVelocities(CollisionResult collisionInfo,
 
   glm::vec3 deltaV = -(glm::normalize(vt)) *
                      glm::min(h * friction * glm::length(fn), glm::length(vt));
-  // deltaV +=
-  //     collisionInfo.normal * (-vn + glm::min(-RESTITUTION_COEFF * vnOld,
-  //     0.0f));
+  deltaV +=
+      collisionInfo.normal * (-vn + glm::min(-RESTITUTION_COEFF * vnOld, 0.0f));
   // maybe apply damping
 
   glm::mat3 R1 = glm::mat3_cast(t1.rotation);
