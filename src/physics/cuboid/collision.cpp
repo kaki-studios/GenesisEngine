@@ -186,9 +186,9 @@ CollisionResult SAT(OBB o1, OBB o2) {
 }
 
 // inverse of stiffness and has units meters/Newton
-const float COLLISION_COMPLIANCE = 5e-6f;
+const float COLLISION_COMPLIANCE = 1e-3;
 
-void SolvePositions(CollisionResult collisionInfo,
+void SolvePositions(CollisionResult &collisionInfo,
                     ECS::Coordinator *coordinator, float h) {
   ECS::Entity e1 = collisionInfo.bodyA;
   std::cout << "e1: " << e1 << "\n";
@@ -223,10 +223,12 @@ void SolvePositions(CollisionResult collisionInfo,
 
   collisionInfo.penetration = glm::dot((p2 - p1), collisionInfo.normal);
   std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
+  std::cout << "normal:" << collisionInfo.normal.x << ", "
+            << collisionInfo.normal.y << ", " << collisionInfo.normal.z << "\n";
 
   if (collisionInfo.penetration <= 0.0f) {
     // collisionInfo.penetration *= -1.0f;
-    std::cout << "BUG: penetration is positive\n";
+    std::cout << "BUG: penetration is negative\n";
     // return;
   }
   // glm::vec3 r1 = collisionInfo.contactA;
@@ -292,7 +294,7 @@ void SolvePositions(CollisionResult collisionInfo,
 
 const float RESTITUTION_COEFF = 0.5f;
 
-void SolveVelocities(CollisionResult collisionInfo,
+void SolveVelocities(CollisionResult &collisionInfo,
                      ECS::Coordinator *coordinator, float h) {
   auto &rb1 = coordinator->GetComponent<Rigidbody>(collisionInfo.bodyA);
   auto &t1 = coordinator->GetComponent<Transform>(collisionInfo.bodyA);

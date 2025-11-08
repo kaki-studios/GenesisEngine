@@ -27,7 +27,7 @@ struct OBB {
 std::vector<CollisionResult>
 CollectCollisionPairs(std::set<ECS::Entity> entities,
                       ECS::Coordinator *coordinator);
-void SolvePositions(CollisionResult collisionInfo,
+void SolvePositions(CollisionResult &collisionInfo,
                     ECS::Coordinator *coordinator, float h);
-void SolveVelocities(CollisionResult collisionInfo,
+void SolveVelocities(CollisionResult &collisionInfo,
                      ECS::Coordinator *coordinator, float h);
