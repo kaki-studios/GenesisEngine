@@ -32,33 +32,15 @@ void DebugCollisions::SetCollisions(std::vector<CollisionResult> collisions,
   if (collisions.size() > 0) {
     // std::cout << "collision count: " << collisions.size() << "\n";
   }
-  std::cout << "--DEBUG INFO--: ";
   for (auto &collision : collisions) {
     auto t1 = coordinator->GetComponent<Transform>(collision.bodyA);
     auto t2 = coordinator->GetComponent<Transform>(collision.bodyB);
     ECS::Entity entity = coordinator->CreateEntity();
-    const float strecthFactor = 1.0f;
-    glm::vec3 contact = (collision.contactA + collision.contactB) * 0.5f;
-    if (collision.bodyA == 1) {
-      std::cout << "Contact Point: " << contact.x << ", " << contact.y << ", "
-                << contact.z << "     ";
-      // std::cout << "Between entity " << collision.bodyA << " and entity "
-      //           << collision.bodyB << "\n";
-    }
-    // std::cout << "Entity 1 pos:" << t1.position.x << "," << t1.position.y
-    // <<
-    // ","
-    //           << t1.position.z << "\n ";
-    // std::cout << "Entity 2 pos: " << t2.position.x << ", " <<
-    // t2.position.y
-    //           << ", " << t2.position.z << "\n";
 
-    // glm::vec3 p1 = t1.position + (t1.rotation * collision.contactA);
-    glm::vec3 p1 = collision.contactA;
-    // glm::vec3 p2 = t2.position + (t2.rotation * collision.contactB);
-    glm::vec3 p2 = collision.contactB;
-    // float penetration = glm::abs(glm::dot(p2 - p1, collision.normal));
-    // std::cout << "Penetration: " << collision.penetration << "\n";
+    glm::vec3 p1 = t1.position + (t1.rotation * collision.contactA);
+    glm::vec3 p2 = t2.position + (t2.rotation * collision.contactB);
+    const float strecthFactor = 1.0f;
+    glm::vec3 contact = (p1 + p2) * 0.5f;
 
     glm::vec3 pos = contact;
     coordinator->AddComponent(entity, DebugMarker{});
@@ -75,5 +57,4 @@ void DebugCollisions::SetCollisions(std::vector<CollisionResult> collisions,
                                           .rotation = glm::normalize(dir),
                                       });
   }
-  std::cout << "--END--\n";
 }

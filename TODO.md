@@ -13,7 +13,7 @@
 - [X] Camera controls and debugging
 - [X] Collisions working properly
     - [ ] Study XPBD more since the collision resolution is wrong.
-        - [ ] Incorrect contact manifolds, points shifted by a constant amount per collision IMPORTANT
+        - [X] Incorrect contact manifolds, points shifted by a constant amount per collision IMPORTANT
         - [ ] Warm starting (store lagrangeMultiplier across frames)
         - [X] Solver injects energy and other bugs??
             - [X] Collision detection: wrong contact point locations (check sutherland-hogdman & epa)

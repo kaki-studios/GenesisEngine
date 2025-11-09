@@ -201,10 +201,10 @@ void SolvePositions(CollisionResult &collisionInfo,
   // TODO: static friction (section 3.5 in xpbd)
 
   glm::vec3 r1 = collisionInfo.contactA;
-  glm::vec3 p1 = t1.position + t1.rotation * collisionInfo.contactA;
+  glm::vec3 p1 = t1.position + (t1.rotation * r1);
 
   glm::vec3 r2 = collisionInfo.contactB;
-  glm::vec3 p2 = t2.position + t2.rotation * collisionInfo.contactB;
+  glm::vec3 p2 = t2.position + (t2.rotation * r2);
 
   // std::cout << "GlobalA recomp: (" << p1.x << "), (" << p1.y << "), (" <<
   // p1.z
@@ -282,6 +282,9 @@ void SolvePositions(CollisionResult &collisionInfo,
   // idk what to do with this (maybe store??)
   glm::vec3 collisionForce =
       (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
+  std::cout << "CollisionForce, " << collisionInfo.bodyA << " and "
+            << collisionInfo.bodyB << ": " << collisionForce.x << ", "
+            << collisionForce.y << ", " << collisionForce.z << "\n";
   // std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
   //           << " and penetration: " << collisionInfo.penetration
   //           << "lagrangeMultiplier: " << collisionInfo.lagrangeMultiplier

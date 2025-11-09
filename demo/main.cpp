@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
     glm::vec3 halfExtents = glm::vec3(2.5f, 2.5f + i, 2.5f + i);
     app.coordinator.AddComponent(
         entities[i], Transform{
-                         .position = glm::vec3(i * 15.0f, 10.0f, 0.0f),
+                         .position = glm::vec3(0.0f, (i + 1) * 15.0f, 0.0f),
                          .rotation = glm::identity<glm::quat>(),
                      });
 
@@ -96,10 +96,11 @@ int main(int argc, char *argv[]) {
                                  CreateCuboidRB(halfExtents, 1.0f));
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
-    rb.angularVelocity = glm::vec3(5.0, 0.1, float(i) * 2.5);
-    rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
+    // rb.angularVelocity = glm::vec3(5.0, 0.1, float(i) * 2.5);
+    // rb.linearVelocity = glm::vec3(-float((i * 2.0f) - 1), 0.0f, 0.0f);
     //  gravity
     rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
+    // rb.extForce = glm::vec3(0.0f, -1.0f / rb.invMass, 0.0f);
   }
   // ground
   CreateWalls(&app);
@@ -154,15 +155,6 @@ int main(int argc, char *argv[]) {
   bool paused = false;
 
   while (!app.ShouldClose()) {
-    for (auto e : entities) {
-      if (e != 0) {
-        continue;
-      }
-      auto t = app.coordinator.GetComponent<Transform>(e);
-      // std::cout << "entity: " << e << " position: (" << t.position.x << ", "
-      //           << t.position.y << ", " << t.position.z << ")\n";
-    }
-
     deltaTime = (now - last) / 1000.0;
     last = now;
     now = SDL_GetTicks();
@@ -175,9 +167,10 @@ int main(int argc, char *argv[]) {
       for (auto e : entities) {
         auto &trans = app.coordinator.GetComponent<Transform>(e);
         auto &rb = app.coordinator.GetComponent<Rigidbody>(e);
-        trans.position = glm::vec3(15.0f * e, 10.0f, 0.0f);
-        rb.angularVelocity = glm::vec3(5.0, 0.1, float(e) * 2.5);
-        // rb.linearVelocity = glm::vec3(-float((e * 2) - 1), 0.0f, 0.0f);
+        trans.position = glm::vec3((float(e) * 15.0f), 10.0f, (e * 5.0f));
+
+        rb.angularVelocity = glm::vec3(5.0, 0.1, 0);
+        rb.linearVelocity = glm::vec3(-float((e * 2.0f) - 1), 0.0f, 0.0f);
       }
     }
     accumulator += deltaTime;

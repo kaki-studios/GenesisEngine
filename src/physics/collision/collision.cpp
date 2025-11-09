@@ -55,19 +55,15 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
         glm::vec3 pB = point.positionB;
         glm::vec3 localA = glm::inverse(t1.rotation) * (pA - t1.position);
         glm::vec3 localB = glm::inverse(t2.rotation) * (pB - t2.position);
-        glm::vec3 globalA = t1.position + t1.rotation * localA;
-        glm::vec3 globalB = t2.position + t2.rotation * localB;
-        float penetration = -glm::dot(globalA - globalB, m.normal);
+        float penetration = -glm::dot(pA - pB, m.normal);
         if (penetration < 0.0f) {
           m.normal *= -1.0f;
           penetration *= -1.0f;
           // std::cout << "flipping penetration and normal\n";
         }
+
         // std::cout << "reconstructed penetration: " << penetration << "\n";
 
-        // std::cout << "GlobalA: (" << globalA.x << "), (" << globalA.y << "),
-        // ("
-        //           << globalA.z << ")\n";
         CollisionResult temp;
         temp.valid = true;
         temp.lagrangeMultiplier = 0.0f;
