@@ -186,7 +186,7 @@ CollisionResult SAT(OBB o1, OBB o2) {
 }
 
 // inverse of stiffness and has units meters/Newton
-const float COLLISION_COMPLIANCE = 1e-3;
+const float COLLISION_COMPLIANCE = 0.0f;
 
 void SolvePositions(CollisionResult &collisionInfo,
                     ECS::Coordinator *coordinator, float h) {
@@ -261,7 +261,7 @@ void SolvePositions(CollisionResult &collisionInfo,
   // lagrangeMultiplier updates
   float aHat = COLLISION_COMPLIANCE / (h * h);
   float dl =
-      (-collisionInfo.penetration - aHat * collisionInfo.lagrangeMultiplier) /
+      -(-collisionInfo.penetration - aHat * collisionInfo.lagrangeMultiplier) /
       (gim1 + gim2 + aHat);
   std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
