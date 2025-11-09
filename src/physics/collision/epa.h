@@ -13,6 +13,7 @@ struct CollisionResult {
   ECS::Entity bodyB;
   bool valid; // if epa failed, false
   float lagrangeMultiplier;
+  float restitutionCoeff;
 
   CollisionResult() : penetration(0.0f), normal(glm::vec3(0)), valid(false) {}
 };

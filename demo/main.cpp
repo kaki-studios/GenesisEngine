@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   App app(1920, 1080);
   // App app(800, 600);
 
-  std::array<ECS::Entity, 1> entities;
+  std::array<ECS::Entity, 2> entities;
   // these should be somewhere else
   app.coordinator.RegisterComponent<Transform>();
   app.coordinator.RegisterComponent<Cuboid>();
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
     rb.angularVelocity = glm::vec3(5.0, 0.1, float(i) * 2.5);
-    // rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
+    rb.linearVelocity = glm::vec3(-float((i * 2) - 1), 0.0f, 0.0f);
     //  gravity
     rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
   }
@@ -169,11 +169,16 @@ int main(int argc, char *argv[]) {
     app.Update();
 
     InputState state = app.GetInputState();
-    currKeyState = state.keysDown[SDLK_ESCAPE];
+    currKeyState = state.keysDown[SDLK_R];
     // rising edge
     if (currKeyState && !lastKeyState) {
-      paused = !paused;
-      SDL_SetWindowRelativeMouseMode(app.GetWindow(), !paused);
+      for (auto e : entities) {
+        auto &trans = app.coordinator.GetComponent<Transform>(e);
+        auto &rb = app.coordinator.GetComponent<Rigidbody>(e);
+        trans.position = glm::vec3(15.0f * e, 10.0f, 0.0f);
+        rb.angularVelocity = glm::vec3(5.0, 0.1, float(e) * 2.5);
+        // rb.linearVelocity = glm::vec3(-float((e * 2) - 1), 0.0f, 0.0f);
+      }
     }
     accumulator += deltaTime;
     while (accumulator >= H) {
@@ -191,7 +196,7 @@ int main(int argc, char *argv[]) {
     }
     cubeRenderer->Update();
 
-    lastKeyState = state.keysDown[SDLK_ESCAPE];
+    lastKeyState = state.keysDown[SDLK_R];
 
     bgfx::frame();
   }

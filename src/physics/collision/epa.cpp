@@ -228,7 +228,7 @@ CollisionResult EPA(const Collider &a, const Collider &b,
     std::cout << "simplex doesn't contain origin\n";
     return CollisionResult();
   } else {
-    std::cout << "simplex contains origin\n";
+    // std::cout << "simplex contains origin\n";
   }
 
   std::vector<SupportPoint> vertices(simplex.points.begin(),
@@ -252,18 +252,19 @@ CollisionResult EPA(const Collider &a, const Collider &b,
       // we've found the minimum penetration
       CollisionResult result;
       calculateContactPoint(result, closestEPAFace, vertices);
-      std::cout << "Closest face normal before use: ("
-                << closestEPAFace.normal.x << "," << closestEPAFace.normal.y
-                << "," << closestEPAFace.normal.z << ") "
-                << "magnitude: " << glm::length(closestEPAFace.normal)
-                << std::endl;
-      std::cout << "Closest face distance: " << closestEPAFace.distance
-                << std::endl;
+      // std::cout << "Closest face normal before use: ("
+      //           << closestEPAFace.normal.x << "," << closestEPAFace.normal.y
+      //           << "," << closestEPAFace.normal.z << ") "
+      //           << "magnitude: " << glm::length(closestEPAFace.normal)
+      //           << std::endl;
+      // std::cout << "Closest face distance: " << closestEPAFace.distance
+      //           << std::endl;
       result.normal = glm::normalize(closestEPAFace.normal);
-      std::cout << "-------end-------\n";
+      // std::cout << "-------end-------\n";
 
       result.penetration = closestEPAFace.distance;
       result.valid = true;
+
       return result;
     }
     std::vector<std::pair<int, int>> holeEdges =

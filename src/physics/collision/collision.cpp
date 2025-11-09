@@ -44,7 +44,7 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
       if (collision.penetration <= 0.0f)
         continue;
       ContactManifold m = buildContactManifold(*c1.inner, *c2.inner, collision);
-      std::cout << "points length" << m.points.size() << "\n";
+      // std::cout << "points length" << m.points.size() << "\n";
       // if (m.points.size() == 0) {
       //   collisions.push_back(collision);
       //   continue;
@@ -61,12 +61,13 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
         if (penetration < 0.0f) {
           m.normal *= -1.0f;
           penetration *= -1.0f;
-          std::cout << "flipping penetration and normal\n";
+          // std::cout << "flipping penetration and normal\n";
         }
-        std::cout << "reconstructed penetration: " << penetration << "\n";
+        // std::cout << "reconstructed penetration: " << penetration << "\n";
 
-        std::cout << "GlobalA: (" << globalA.x << "), (" << globalA.y << "), ("
-                  << globalA.z << ")\n";
+        // std::cout << "GlobalA: (" << globalA.x << "), (" << globalA.y << "),
+        // ("
+        //           << globalA.z << ")\n";
         CollisionResult temp;
         temp.valid = true;
         temp.lagrangeMultiplier = 0.0f;
@@ -77,7 +78,7 @@ CollectCollisionPairsNew(std::set<ECS::Entity> entities,
         temp.contactA = localA;
         temp.contactB = localB;
         temp.penetration = penetration;
-        // temp.penetration = -penetration;
+        temp.restitutionCoeff = rb1.restitution * rb2.restitution;
         collisions.push_back(temp);
       }
     }

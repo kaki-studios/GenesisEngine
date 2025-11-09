@@ -10,16 +10,16 @@
 - [ ] Physics Engine (XPBD)
 
 ## Low Level TODOs
-- [ ] Camera controls and debugging
-- [ ] Collisions working properly
+- [X] Camera controls and debugging
+- [X] Collisions working properly
     - [ ] Study XPBD more since the collision resolution is wrong.
+        - [ ] Incorrect contact manifolds, points shifted by a constant amount per collision IMPORTANT
         - [ ] Warm starting (store lagrangeMultiplier across frames)
-        - [ ] Apply slop (maybe?)
-        - [ ] Solver injects energy and other bugs??
+        - [X] Solver injects energy and other bugs??
             - [X] Collision detection: wrong contact point locations (check sutherland-hogdman & epa)
             - [X] Solver seems to increase penetration at first before seperating the bodies (in 1 frame)??
-            - [ ] TODO: restitution
-            - [ ] Collision detection bug: sutherland-hogdman gives penetration, but after integrating bodies, the penetration goes *down* after recomputing the penetration (0.06 to 0.05) even though it should go up!!
+            - [X] TODO: restitution
+            - [X] Collision detection bug: sutherland-hogdman gives penetration, but after integrating bodies, the penetration goes *down* after recomputing the penetration (0.06 to 0.05) even though it should go up!!
     - [X] Recompute collision penetration per substep
         - [X] In narrowphase: transform collsion points to bodies' local space
         - [X] In solver: transform them back to global space and recompute the penetration

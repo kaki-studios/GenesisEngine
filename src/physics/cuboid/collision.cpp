@@ -2,17 +2,13 @@
 #include "../../rendering/cube_renderer.h"
 #include "ecs/entity_manager.h"
 #include "glm/common.hpp"
-#include "glm/ext/scalar_constants.hpp"
 #include "glm/geometric.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/matrix.hpp"
 #include "physics/collision/epa.h"
 #include "rigidbody.h"
 #include <ECS.h>
-#include <cmath>
-#include <cstdio>
 #include <iostream>
-#include <set>
 #include <vector>
 
 // super simple broadphase, TODO make AABB instead of sphere
@@ -191,9 +187,7 @@ const float COLLISION_COMPLIANCE = 0.0f;
 void SolvePositions(CollisionResult &collisionInfo,
                     ECS::Coordinator *coordinator, float h) {
   ECS::Entity e1 = collisionInfo.bodyA;
-  std::cout << "e1: " << e1 << "\n";
   ECS::Entity e2 = collisionInfo.bodyB;
-  std::cout << "e2: " << e2 << "\n";
   auto &rb1 = coordinator->GetComponent<Rigidbody>(e1);
   auto &rb2 = coordinator->GetComponent<Rigidbody>(e2);
   auto &t1 = coordinator->GetComponent<Transform>(e1);
@@ -212,24 +206,26 @@ void SolvePositions(CollisionResult &collisionInfo,
   glm::vec3 r2 = collisionInfo.contactB;
   glm::vec3 p2 = t2.position + t2.rotation * collisionInfo.contactB;
 
-  std::cout << "GlobalA recomp: (" << p1.x << "), (" << p1.y << "), (" << p1.z
-            << ")\n";
+  // std::cout << "GlobalA recomp: (" << p1.x << "), (" << p1.y << "), (" <<
+  // p1.z
+  //           << ")\n";
 
   // if (glm::dot(p2 - p1, collisionInfo.normal) > 0) {
   //   collisionInfo.normal = -collisionInfo.normal;
   // }
 
-  std::cout << "old penetration" << collisionInfo.penetration << "\n";
+  // std::cout << "old penetration" << collisionInfo.penetration << "\n";
 
   collisionInfo.penetration = glm::dot((p2 - p1), collisionInfo.normal);
-  std::cout << "recomputed penetration: " << collisionInfo.penetration << "\n";
-  std::cout << "normal:" << collisionInfo.normal.x << ", "
-            << collisionInfo.normal.y << ", " << collisionInfo.normal.z << "\n";
+  // std::cout << "recomputed penetration: " << collisionInfo.penetration <<
+  // "\n"; std::cout << "normal:" << collisionInfo.normal.x << ", "
+  //           << collisionInfo.normal.y << ", " << collisionInfo.normal.z <<
+  //           "\n";
 
   if (collisionInfo.penetration <= 0.0f) {
     // collisionInfo.penetration *= -1.0f;
-    std::cout << "BUG: penetration is negative\n";
-    // return;
+    // std::cout << "BUG: penetration is negative\n";
+    return;
   }
   // glm::vec3 r1 = collisionInfo.contactA;
   // glm::vec3 r2 = collisionInfo.contactB;
@@ -263,7 +259,7 @@ void SolvePositions(CollisionResult &collisionInfo,
   float dl =
       -(-collisionInfo.penetration - aHat * collisionInfo.lagrangeMultiplier) /
       (gim1 + gim2 + aHat);
-  std::cout << "dl: " << dl << "\n";
+  // std::cout << "dl: " << dl << "\n";
   collisionInfo.lagrangeMultiplier += dl;
   // collisionInfo.lagrangeMultiplier =
   //     glm::min(0.0f, collisionInfo.lagrangeMultiplier);
@@ -286,13 +282,11 @@ void SolvePositions(CollisionResult &collisionInfo,
   // idk what to do with this (maybe store??)
   glm::vec3 collisionForce =
       (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
-  std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
-            << " and penetration: " << collisionInfo.penetration
-            << "lagrangeMultiplier: " << collisionInfo.lagrangeMultiplier
-            << std::endl;
+  // std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
+  //           << " and penetration: " << collisionInfo.penetration
+  //           << "lagrangeMultiplier: " << collisionInfo.lagrangeMultiplier
+  //           << std::endl;
 }
-
-const float RESTITUTION_COEFF = 0.5f;
 
 void SolveVelocities(CollisionResult &collisionInfo,
                      ECS::Coordinator *coordinator, float h) {
@@ -331,9 +325,8 @@ void SolveVelocities(CollisionResult &collisionInfo,
 
   glm::vec3 deltaV = -(glm::normalize(vt)) *
                      glm::min(h * friction * glm::length(fn), glm::length(vt));
-  deltaV +=
-      collisionInfo.normal * (-vn + glm::min(-RESTITUTION_COEFF * vnOld, 0.0f));
-  // maybe apply damping
+  deltaV += collisionInfo.normal *
+            (-vn + glm::min(-collisionInfo.restitutionCoeff * vnOld, 0.0f));
 
   glm::mat3 R1 = glm::mat3_cast(t1.rotation);
   glm::mat3 globalInvInertia1 = R1 * rb1.invInertia * glm::transpose(R1);

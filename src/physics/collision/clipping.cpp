@@ -12,7 +12,7 @@
 
 inline Plane makePlane(const glm::vec3 &nUnit, const glm::vec3 &pointOnPlane) {
   return Plane{glm::normalize(nUnit),
-               glm::dot(glm::normalize(nUnit), pointOnPlane)};
+               -glm::dot(glm::normalize(nUnit), pointOnPlane)};
 }
 
 // Collect world-space vertices of a face (CCW when seen along +face.normal)
@@ -24,8 +24,9 @@ inline std::vector<glm::vec3> getWorldFaceVerts(const ICollider &h,
   for (int idx : f.indices) {
     auto vert = h.getVertex(idx);
     out.push_back(vert);
-    std::cout << "vertex " << idx << " for face: " << faceIdx << ": (" << vert.x
-              << "), (" << vert.y << "), (" << vert.z << ")\n";
+    // std::cout << "vertex " << idx << " for face: " << faceIdx << ": (" <<
+    // vert.x
+    //           << "), (" << vert.y << "), (" << vert.z << ")\n";
   }
   return out;
 }
@@ -174,10 +175,11 @@ inline std::vector<glm::vec3> reduceToFour(const std::vector<glm::vec3> &pts) {
 
 ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
                                      const CollisionResult &epa) {
-  std::cout << "building contact manifold with epa contact point 1: ("
-            << epa.contactA.x << ", " << epa.contactA.y << ", "
-            << epa.contactA.z << "), and contact point 2: (" << epa.contactB.x
-            << ", " << epa.contactB.y << ", " << epa.contactB.z << ")\n";
+  // std::cout << "building contact manifold with epa contact point 1: ("
+  //           << epa.contactA.x << ", " << epa.contactA.y << ", "
+  //           << epa.contactA.z << "), and contact point 2: (" <<
+  //           epa.contactB.x
+  //           << ", " << epa.contactB.y << ", " << epa.contactB.z << ")\n";
 
   ContactManifold m{};
 
@@ -205,7 +207,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   glm::vec3 mNormal = nEPA;   // manifold normal (incident -> reference)
 
   if (bAlign > aAlign) {
-    std::cout << "flipping normals\n";
+    // std::cout << "flipping normals\n";
     REF = &B;
     INC = &A;
     refIdx = bRef;
@@ -235,7 +237,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   for (const glm::vec3 &p : clipped) {
     float sd = refPlane.signedDistance(
         p); // >0 means in front of outward normal (outside)
-    std::cout << "sd: " << sd << "\n";
+    // std::cout << "sd: " << sd << "\n";
     if (sd <= eps || std::abs(sd) < 0.001f) {
       glm::vec3 proj = p - sd * refPlane.normal;
       contacts.push_back(proj);
@@ -246,7 +248,7 @@ ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
   if (contacts.empty()) {
     // Degenerate case; you can fallback to a single point along the normal.
     // Here we just return empty points but keep normal & penetration.
-    std::cout << "no contacts, Degenerate\n";
+    // std::cout << "no contacts, Degenerate\n";
     m.normal = mNormal;
     m.points.push_back({epa.contactA, epa.contactB});
     return m;
