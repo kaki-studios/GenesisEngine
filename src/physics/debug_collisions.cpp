@@ -47,10 +47,11 @@ void DebugCollisions::SetCollisions(std::vector<CollisionResult> collisions,
     coordinator->AddComponent(
         entity, Cuboid{
                     .halfExtents = glm::vec3(
-                        0.1, 0.1, collision.penetration * strecthFactor),
-                    .color = glm::vec3((float(iter) / 20.0f),
-                                       float(20 - iter) / 20.0f, 0.0),
+                        0.1, 0.1, collision.lagrangeMultiplier * strecthFactor),
+                    .color = glm::vec3((float(20 - iter) / 20.0f),
+                                       float(iter) / 20.0f, 0.0),
                 });
+
     glm::quat dir = glm::quatLookAt(collision.normal, glm::vec3(0.0, 1.0, 0.0));
     coordinator->AddComponent(entity, Transform{
                                           .position = pos,

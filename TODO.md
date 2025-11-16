@@ -5,12 +5,15 @@
 - [ ] Renderer
     - [X] Minimal cuboid renderer
     - [ ] Mesh renderer
-    - [ ] Proper shading
+    - [X] Proper shading
 - [ ] ImGui integration
 - [ ] Physics Engine (XPBD)
 
 ## Low Level TODOs
 - [X] Camera controls and debugging
+- [ ] Rigidbodies spawned after startup behave differently:
+    - [ ] Entity ID is random
+    - [ ] Collision resolution if wrong (but only for these rigidbodies)
 - [X] Collisions working properly
     - [ ] Study XPBD more since the collision resolution is wrong.
         - [X] Incorrect contact manifolds, points shifted by a constant amount per collision IMPORTANT

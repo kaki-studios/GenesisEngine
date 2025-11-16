@@ -282,9 +282,11 @@ void SolvePositions(CollisionResult &collisionInfo,
   // idk what to do with this (maybe store??)
   glm::vec3 collisionForce =
       (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
-  std::cout << "CollisionForce, " << collisionInfo.bodyA << " and "
-            << collisionInfo.bodyB << ": " << collisionForce.x << ", "
-            << collisionForce.y << ", " << collisionForce.z << "\n";
+  // if ((collisionInfo.bodyA != 0) && (collisionInfo.bodyA != 1)) {
+  //   std::cout << "CollisionForce, " << collisionInfo.bodyA << " and "
+  //             << collisionInfo.bodyB << ": " << collisionForce.x << ", "
+  //             << collisionForce.y << ", " << collisionForce.z << "\n";
+  // }
   // std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
   //           << " and penetration: " << collisionInfo.penetration
   //           << "lagrangeMultiplier: " << collisionInfo.lagrangeMultiplier

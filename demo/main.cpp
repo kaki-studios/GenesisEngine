@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   App app(1920, 1080);
   // App app(800, 600);
 
-  std::array<ECS::Entity, 2> entities;
+  std::array<ECS::Entity, 1> entities;
   // these should be somewhere else
   app.coordinator.RegisterComponent<Transform>();
   app.coordinator.RegisterComponent<Cuboid>();
@@ -79,10 +79,11 @@ int main(int argc, char *argv[]) {
     entities[i] = app.coordinator.CreateEntity();
     glm::vec3 halfExtents = glm::vec3(2.5f, 2.5f + i, 2.5f + i);
     app.coordinator.AddComponent(
-        entities[i], Transform{
-                         .position = glm::vec3(0.0f, (i + 1) * 15.0f, 0.0f),
-                         .rotation = glm::identity<glm::quat>(),
-                     });
+        entities[i],
+        Transform{
+            .position = glm::vec3((i + 1) * 10.0f, (i + 1) * 15.0f, 0.0f),
+            .rotation = glm::identity<glm::quat>(),
+        });
 
     app.coordinator.AddComponent(entities[i],
                                  Cuboid{
@@ -97,10 +98,10 @@ int main(int argc, char *argv[]) {
 
     auto &rb = app.coordinator.GetComponent<Rigidbody>(entities[i]);
     // rb.angularVelocity = glm::vec3(5.0, 0.1, float(i) * 2.5);
-    // rb.linearVelocity = glm::vec3(-float((i * 2.0f) - 1), 0.0f, 0.0f);
+    // rb.linearVelocity = glm::vec3(-10.0f * float((i * 2.0f) - 1), 0.0f,
+    // 0.0f);
     //  gravity
     rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
-    // rb.extForce = glm::vec3(0.0f, -1.0f / rb.invMass, 0.0f);
   }
   // ground
   CreateWalls(&app);
@@ -164,14 +165,27 @@ int main(int argc, char *argv[]) {
     currKeyState = state.keysDown[SDLK_R];
     // rising edge
     if (currKeyState && !lastKeyState) {
-      for (auto e : entities) {
-        auto &trans = app.coordinator.GetComponent<Transform>(e);
-        auto &rb = app.coordinator.GetComponent<Rigidbody>(e);
-        trans.position = glm::vec3((float(e) * 15.0f), 10.0f, (e * 5.0f));
+      ECS::Entity newEntity = app.coordinator.CreateEntity();
+      glm::vec3 halfExtents = glm::vec3(2.5f, 2.5f, 2.5f);
+      app.coordinator.AddComponent(newEntity,
+                                   Transform{
+                                       .position = glm::vec3(0.0f, 15.0f, 0.0f),
+                                       .rotation = glm::identity<glm::quat>(),
+                                   });
 
-        rb.angularVelocity = glm::vec3(5.0, 0.1, 0);
-        rb.linearVelocity = glm::vec3(-float((e * 2.0f) - 1), 0.0f, 0.0f);
-      }
+      app.coordinator.AddComponent(newEntity,
+                                   Cuboid{
+                                       .halfExtents = halfExtents,
+                                       .color = glm::vec3(1.0f, 0.0f, 0.0f),
+                                   });
+      app.coordinator.AddComponent(newEntity,
+                                   Collider(CuboidCollider(halfExtents)));
+
+      app.coordinator.AddComponent(newEntity,
+                                   CreateCuboidRB(halfExtents, 1.0f));
+
+      auto &rb = app.coordinator.GetComponent<Rigidbody>(newEntity);
+      rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
     }
     accumulator += deltaTime;
     while (accumulator >= H) {
