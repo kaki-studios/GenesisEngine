@@ -1,26 +1,24 @@
 #include "component_array.h"
 #include "entity_manager.h"
 #include <memory>
+#include <typeindex>
 #include <unordered_map>
 namespace ECS {
 class ComponentManager {
 public:
   template <typename T> void RegisterComponent() {
-    const char *typeName = typeid(T).name();
+    std::type_index typeName(typeid(T));
 
     assert(mComponentTypes.find(typeName) == mComponentTypes.end() &&
            "Registering component type more than once");
-    // add to component type map
     mComponentTypes.insert({typeName, mNextComponentType});
-    // add to component array map
     mComponentArrays.insert({typeName, std::make_shared<ComponentArray<T>>()});
     ++mNextComponentType;
   }
   template <typename T> ComponentType GetComponentType() {
-    const char *typeName = typeid(T).name();
+    std::type_index typeName(typeid(T));
     assert(mComponentTypes.find(typeName) != mComponentTypes.end() &&
            "Component not registered before use");
-    // return this component's type, used for creating signatures
     return mComponentTypes[typeName];
   }
   template <typename T> void AddComponent(Entity entity, T component) {
@@ -37,33 +35,27 @@ public:
     // If it has a component for that entity, it will remove it
     for (auto const &pair : mComponentArrays) {
       auto const &component = pair.second;
-
       component->EntityDestroyed(entity);
     }
   }
 
 private:
-  // Map from type string pointer to a component type
-  std::unordered_map<const char *, ComponentType> mComponentTypes{};
+  // Keyed by std::type_index: typeid(T).name() pointers are not guaranteed to
+  // be identical across translation units.
+  std::unordered_map<std::type_index, ComponentType> mComponentTypes{};
 
-  // Map from type string pointer to a component array
-  std::unordered_map<const char *, std::shared_ptr<IComponentArray>>
+  std::unordered_map<std::type_index, std::shared_ptr<IComponentArray>>
       mComponentArrays{};
 
-  // The component type to be assigned to the next registered component -
-  // starting at 0
+  // The component type to be assigned to the next registered component
   ComponentType mNextComponentType{};
 
-  // Convenience function to get the statically casted pointer to the
-  // ComponentArray of type T.
   template <typename T> std::shared_ptr<ComponentArray<T>> GetComponentArray() {
-    const char *typeName = typeid(T).name();
-
+    std::type_index typeName(typeid(T));
     assert(mComponentTypes.find(typeName) != mComponentTypes.end() &&
            "Component not registered before use.");
-
     return std::static_pointer_cast<ComponentArray<T>>(
-        mComponentArrays[typeName]);
+        mComponentArrays.at(typeName));
   }
 };
 } // namespace ECS

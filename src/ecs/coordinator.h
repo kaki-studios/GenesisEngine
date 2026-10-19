@@ -30,7 +30,7 @@ public:
     mComponentManager->RemoveComponent<T>(entity);
 
     auto signature = mEntityManager->GetSignature(entity);
-    signature.set(mComponentManager->GetComponentType<T>(), true);
+    signature.set(mComponentManager->GetComponentType<T>(), false);
     mEntityManager->SetSignature(entity, signature);
 
     mSystemManager->EntitySignatureChanged(entity, signature);

@@ -2,6 +2,7 @@
 #include <glm/common.hpp>
 #include <glm/ext.hpp>
 #include <memory>
+#include <vector>
 
 enum ColliderType {
   CuboidColliderType = 0,

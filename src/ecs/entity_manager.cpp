@@ -1,43 +1,38 @@
 #include "entity_manager.h"
-#include <assert.h>
 
 namespace ECS {
 
 EntityManager::EntityManager() {
   // init the queue with all possible entity ids
-  for (Entity entity = 0; entity < MAX_ENTITIES; ++entity) {
+  for (Entity entity = 0; entity < MAX_ENTITIES; ++entity)
     mAvailableEntities.push(entity);
-  }
 }
 
 Entity EntityManager::CreateEntity() {
-  assert(mLivingEntityCount < MAX_ENTITIES && "Too many entities");
-  // take available id from front of queue
+  assert(!mAvailableEntities.empty() && "Too many entities");
   Entity id = mAvailableEntities.front();
   mAvailableEntities.pop();
-  ++mLivingEntityCount;
-
+  // Clear any stale signature left behind by a recycled id. Without this a
+  // respawned entity inherits the dead one's signature and gets pushed into
+  // systems it has no components for.
+  mSignatures[id].reset();
   return id;
 }
+
 void EntityManager::DestroyEntity(Entity entity) {
   assert(entity < MAX_ENTITIES && "Entity out of range");
-  // invalidate the destroyed entity's signature
   mSignatures[entity].reset();
-
-  // put the entity id as available at the back of the queue
   mAvailableEntities.push(entity);
-  --mLivingEntityCount;
 }
+
 void EntityManager::SetSignature(Entity entity, Signature signature) {
   assert(entity < MAX_ENTITIES && "Entity out of range.");
-
-  // Put this entity's signature into the array
   mSignatures[entity] = signature;
 }
+
 Signature EntityManager::GetSignature(Entity entity) {
   assert(entity < MAX_ENTITIES && "Entity out of range");
-
-  // get the signature
   return mSignatures[entity];
 }
+
 } // namespace ECS

@@ -2,24 +2,11 @@
 #include "../../rendering/cube_renderer.h"
 #include "../collision/collision.h"
 #include "collision.h"
-#include "glm/ext/quaternion_common.hpp"
-#include "glm/ext/quaternion_geometric.hpp"
-#include "glm/fwd.hpp"
 #include "glm/geometric.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/matrix.hpp"
-#include <iostream>
 #include <vector>
 
-void printMat3(const glm::mat3 &mat) {
-  for (int row = 0; row < 3; ++row) {
-    std::cout << "[ ";
-    for (int col = 0; col < 3; ++col) {
-      std::cout << mat[col][row] << " ";
-    }
-    std::cout << "]\n";
-  }
-}
 glm::mat3 ComputeCuboidInvInertia(glm::vec3 dims, float density) {
   float volume = dims.x * dims.y * dims.z;
   float x_sqr = dims.x * dims.x;
@@ -31,46 +18,31 @@ glm::mat3 ComputeCuboidInvInertia(glm::vec3 dims, float density) {
   invInertia[0][0] = 12.0f / (mass * (y_sqr + z_sqr));
   invInertia[1][1] = 12.0f / (mass * (x_sqr + z_sqr));
   invInertia[2][2] = 12.0f / (mass * (x_sqr + y_sqr));
-  std::cout << "invInertia determinant:" << glm::determinant(invInertia)
-            << "\n";
   return invInertia;
 }
 
 Rigidbody CreateSB() {
-  return Rigidbody{
-      .prevPosition = glm::vec3(0),
-      .prevRotation = glm::vec3(0),
-      .density = 1.0f,
-      .invMass = 0.0f, // this makes it unmovable, implies infinite mass
-      .linearVelocity = glm::vec3(0),
-      .angularVelocity = glm::vec3(0),
-      .extForce = glm::vec3(0),
-      .invInertia = glm::mat3(0),
-      .restitution = 0.5f,
-      .friction = 0.5f,
-  };
+  Rigidbody rb{};
+  rb.density = 1.0f;
+  rb.invMass = 0.0f; // infinite mass
+  rb.prevRotation = glm::identity<glm::quat>();
+  rb.invInertia = glm::mat3(0.0f);
+  rb.restitution = 0.5f;
+  rb.friction = 0.5f;
+  return rb;
 }
 
 Rigidbody CreateCuboidRB(glm::vec3 halfExtents, float density) {
   glm::vec3 dims = 2.0f * halfExtents;
 
-  glm::mat3 invInertia = ComputeCuboidInvInertia(dims, density);
-  float volume = dims.x * dims.y * dims.z;
-  float invMass = 1.0f / (volume * density);
-
-  return Rigidbody{
-      .prevPosition = glm::vec3(0),
-      .prevRotation = glm::vec3(0),
-      .density = density,
-      .invMass = invMass,
-      .linearVelocity = glm::vec3(0),
-      .angularVelocity = glm::vec3(0),
-      .extForce = glm::vec3(0),
-      .extTorque = glm::vec3(0),
-      .invInertia = invInertia,
-      .restitution = 0.5f,
-      .friction = 0.5f,
-  };
+  Rigidbody rb{};
+  rb.density = density;
+  rb.invMass = 1.0f / (dims.x * dims.y * dims.z * density);
+  rb.prevRotation = glm::identity<glm::quat>();
+  rb.invInertia = ComputeCuboidInvInertia(dims, density);
+  rb.restitution = 0.5f;
+  rb.friction = 0.5f;
+  return rb;
 }
 
 void RigidbodySystem::Init(App *app) {
@@ -86,121 +58,98 @@ void RigidbodySystem::Init(App *app) {
   app->coordinator.SetSystemSignature<RigidbodySystem>(signature);
 }
 
-const int NUM_SUBSTEPS = 20;
-const int NUM_POS_ITERS = 1;
+// Paper: 20 substeps with a single position iteration each is the most
+// accurate use of a fixed time budget (Müller et al. 2020, §3.1).
+static const int NUM_SUBSTEPS = 20;
+static const int NUM_POS_ITERS = 1;
+// The paper runs the velocity pass once. A single Gauss-Seidel sweep cannot
+// cancel the normal velocity across several contacts of the same pair (deep
+// or resting overlaps), which leaves a large separating velocity behind and
+// launches the body. A few sweeps make the pass converge to its fixed point:
+// vn = min(e*vnOld, 0) at every contact.
+static const int NUM_VEL_ITERS = 4;
 
 void RigidbodySystem::Update(double dt) {
   debug->ClearCollisions();
-  // collect collisions
-  for (auto &entity : mEntities) {
-    auto &t = app->coordinator.GetComponent<Transform>(entity);
-    t.rotation = glm::normalize(t.rotation);
-  }
-  std::vector<CollisionResult> collisions =
-      CollectCollisionPairsNew(mEntities, &app->coordinator);
-  for (auto &collision : collisions) {
-    //   auto &rb1 = app->coordinator.GetComponent<Rigidbody>(collision.bodyA);
-    //   auto &t1 = app->coordinator.GetComponent<Transform>(collision.bodyA);
-    //   auto &rb2 = app->coordinator.GetComponent<Rigidbody>(collision.bodyB);
-    //   auto &t2 = app->coordinator.GetComponent<Transform>(collision.bodyB);
-    //   glm::vec3 r1 = collision.contact - t1.position;
-    //   glm::vec3 r2 = collision.contact - t2.position;
-    //   collision.p1 = t1.position + glm::mat3_cast(t1.rotation) * r1;
-    //   collision.p2 = t2.position + glm::mat3_cast(t2.rotation) * r2;
-    //   collision.p1hat = rb1.prevPosition + glm::mat3_cast(rb1.prevRotation) *
-    //   r1; collision.p2hat = rb2.prevPosition +
-    //   glm::mat3_cast(rb2.prevRotation)
-    //   * r1;
 
-    // collision.penetration =
-    //     glm::dot(collision.p2 - collision.p1, collision.normal);
+  for (auto &entity : mEntities)
+    app->coordinator.GetComponent<Transform>(entity).rotation =
+        glm::normalize(app->coordinator.GetComponent<Transform>(entity).rotation);
 
-    // std::cout << "bodyA: " << collision.bodyA << "\n";
-    // std::cout << "bodyB: " << collision.bodyB << "\n";
-  }
-  double h = dt / NUM_SUBSTEPS;
-  for (int i = 0; i < NUM_SUBSTEPS; i++) {
+  const float h = float(dt / NUM_SUBSTEPS);
+
+  for (int substep = 0; substep < NUM_SUBSTEPS; ++substep) {
+    // ---- 1. integrate (Algorithm 2) --------------------------------------
     for (auto &entity : mEntities) {
-      auto &transform = app->coordinator.GetComponent<Transform>(entity);
+      auto &t = app->coordinator.GetComponent<Transform>(entity);
       auto &rb = app->coordinator.GetComponent<Rigidbody>(entity);
-      // integrate positions and velocities
-      rb.prevPosition = transform.position;
-
-      rb.linearVelocity += (rb.extForce * rb.invMass) * float(h);
-      transform.position += rb.linearVelocity * float(h);
-
-      transform.rotation = glm::normalize(transform.rotation);
-
-      // integrate rotations and angular velocities
-      rb.prevRotation = transform.rotation;
-      glm::mat3 R = glm::mat3_cast(transform.rotation);
-      glm::mat3 worldInvInertia = R * (rb.invInertia * glm::transpose(R));
-
-      if (glm::determinant(worldInvInertia) < 1e-12f) {
-        // probably a staticbody
-        continue;
+      if (rb.invMass == 0.0f) {
+        continue; // static body: never moves
       }
-      glm::mat3 worldInertia = glm::inverse(worldInvInertia);
-      // w is omega:
-      // w <- w + h*I^-1(T_ext-(w x (Iw)))
+
+      rb.prevPosition = t.position;
+      rb.prevRotation = t.rotation;
+
+      rb.linearVelocity += rb.extForce * rb.invMass * h;
+      t.position += rb.linearVelocity * h;
+
+      glm::mat3 R = glm::mat3_cast(t.rotation);
+      glm::mat3 invIWorld = R * rb.invInertia * glm::transpose(R);
+      glm::mat3 inertiaWorld = glm::inverse(invIWorld);
+
+      // w <- w + h * I^-1 (tau_ext - w x (I w))
       rb.angularVelocity +=
-          float(h) * worldInvInertia *
-          (rb.extTorque - (glm::cross(rb.angularVelocity,
-                                      (worldInertia * rb.angularVelocity))));
+          h * invIWorld *
+          (rb.extTorque - glm::cross(rb.angularVelocity,
+                                     inertiaWorld * rb.angularVelocity));
 
-      transform.rotation += float(h) * 0.5f *
-                            glm::quat(0.0, rb.angularVelocity) *
-                            transform.rotation;
-      transform.rotation = glm::normalize(transform.rotation);
-    }
-    for (int i = 0; i < NUM_POS_ITERS; i++) {
-      for (auto &collisionInfo : collisions) {
-        // ECS::Entity bodyA = collisionInfo.bodyA;
-        // ECS::Entity bodyB = collisionInfo.bodyB;
+      // q <- q + h/2 * [w, 0] q
+      t.rotation += 0.5f * h * glm::quat(0.0f, rb.angularVelocity) * t.rotation;
+      t.rotation = glm::normalize(t.rotation);
 
-        // auto &t1 =
-        //     app->coordinator.GetComponent<Transform>(collisionInfo.bodyA);
-        // auto &c1 =
-        // app->coordinator.GetComponent<Cuboid>(collisionInfo.bodyA); auto &t2
-        // =
-        //     app->coordinator.GetComponent<Transform>(collisionInfo.bodyB);
-        // auto &c2 =
-        // app->coordinator.GetComponent<Cuboid>(collisionInfo.bodyB); OBB o1 =
-        // OBB(t1.position, t1.rotation, c1.halfExtents); OBB o2 =
-        // OBB(t2.position, t2.rotation, c2.halfExtents); collisionInfo =
-        // SAT(o1, o2); collisionInfo.bodyA = bodyA; collisionInfo.bodyB =
-        // bodyB;
-        /// std::cout << "collision penetration: " << collisionInfo.penetration
-        //<< std::endl;
-
-        SolvePositions(collisionInfo, &app->coordinator, h);
-      }
-    }
-    for (auto &entity : mEntities) {
-      auto &transform = app->coordinator.GetComponent<Transform>(entity);
-      auto &rb = app->coordinator.GetComponent<Rigidbody>(entity);
+      // Velocities used to advance the state this substep. The restitution
+      // term needs them *before* the PBD velocity update (paper §3.6).
       rb.prevLinearVelocity = rb.linearVelocity;
       rb.prevAngularVelocity = rb.angularVelocity;
-
-      // old version, it's according to the paper but doesn't work properly
-      // with gravity
-      //  rb.linearVelocity =
-      //      (transform.position - rb.prevPosition) * float(1.0 / h);
-
-      // new version, works with gravity but idk how accurate it is
-      rb.linearVelocity += (transform.position -
-                            (rb.prevPosition + rb.linearVelocity * float(h))) *
-                           float(1.0 / h);
-      glm::quat dq = transform.rotation * glm::inverse(rb.prevRotation);
-
-      rb.angularVelocity = 2.0f * glm::vec3(dq.x, dq.y, dq.z) * float(1.0 / h);
-      rb.angularVelocity = dq.w >= 0 ? rb.angularVelocity : -rb.angularVelocity;
     }
-    for (auto &collision : collisions) {
-      SolveVelocities(collision, &app->coordinator, h);
+
+    // ---- 2. collision detection, per substep (paper §3.5) ----------------
+    std::vector<CollisionResult> collisions =
+        CollectCollisionPairsNew(mEntities, &app->coordinator);
+
+    // ---- 3. position solve ----------------------------------------------
+    for (int iter = 0; iter < NUM_POS_ITERS; ++iter) {
+      for (auto &collision : collisions) {
+        SolvePositions(collision, &app->coordinator, h);
+      }
     }
-    debug->SetCollisions(collisions, i);
-    // std::cout << "end substep";
+
+    // ---- 4. derive velocities from the position change (paper §3.2) -----
+    for (auto &entity : mEntities) {
+      auto &t = app->coordinator.GetComponent<Transform>(entity);
+      auto &rb = app->coordinator.GetComponent<Rigidbody>(entity);
+      if (rb.invMass == 0.0f) {
+        rb.linearVelocity = glm::vec3(0.0f);
+        rb.angularVelocity = glm::vec3(0.0f);
+        continue;
+      }
+
+      rb.linearVelocity = (t.position - rb.prevPosition) / h;
+
+      glm::quat dq = t.rotation * glm::inverse(rb.prevRotation);
+      if (dq.w < 0.0f) {
+        dq = -dq;
+      }
+      rb.angularVelocity = 2.0f * glm::vec3(dq.x, dq.y, dq.z) / h;
+    }
+
+    // ---- 5. velocity solve: friction + restitution (paper §3.6) ----------
+    for (int iter = 0; iter < NUM_VEL_ITERS; ++iter) {
+      for (auto &collision : collisions) {
+        SolveVelocities(collision, &app->coordinator, h);
+      }
+    }
+
+    debug->SetCollisions(collisions, substep);
   }
-  // std::cout << "end frame\n";
 }

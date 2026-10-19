@@ -30,7 +30,7 @@ struct Rigidbody {
   glm::vec3 extForce;
   glm::vec3 extTorque;
 
-  glm::mat3 invInertia;
+  glm::mat3 invInertia; // body space, diagonal
   float restitution;
   float friction;
 };

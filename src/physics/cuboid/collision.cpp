@@ -1,363 +1,209 @@
 #include "collision.h"
-#include "../../rendering/cube_renderer.h"
-#include "ecs/entity_manager.h"
-#include "glm/common.hpp"
+#include "rigidbody.h"
+#include "../../rendering/cube_renderer.h" // Transform
 #include "glm/geometric.hpp"
 #include "glm/gtc/quaternion.hpp"
 #include "glm/matrix.hpp"
-#include "physics/collision/epa.h"
-#include "rigidbody.h"
-#include <ECS.h>
-#include <iostream>
-#include <vector>
+#include <cmath>
 
-// super simple broadphase, TODO make AABB instead of sphere
-bool BroadPhaseIsColliding(OBB o1, OBB o2) {
-  float r1 = glm::length(o1.halfExtents);
-  float r2 = glm::length(o2.halfExtents);
+namespace {
 
-  float d = glm::length(o1.position - o2.position);
-
-  return (r1 + r2) >= d;
+// World-space inverse inertia: I^-1_world = R * I^-1_body * R^T.
+glm::mat3 WorldInvInertia(const Transform &t, const Rigidbody &rb) {
+  glm::mat3 R = glm::mat3_cast(t.rotation);
+  return R * rb.invInertia * glm::transpose(R);
 }
 
-// Helper function to get OBB axes (local coordinate system)
-std::vector<glm::vec3> getOBBAxes(const OBB &obb) {
-  glm::mat3 rotMatrix = glm::mat3_cast(obb.rotation);
-  return {
-      rotMatrix[0], // X axis
-      rotMatrix[1], // Y axis
-      rotMatrix[2]  // Z axis
-  };
+// Linearised quaternion update, paper eqs. (8)/(9):
+//   q <- q + 1/2 [I^-1 (r x p), 0] q
+// r and p must both be in world space.
+void ApplyAngularUpdate(glm::quat &q, const glm::mat3 &invInertiaWorld,
+                        const glm::vec3 &rWorld, const glm::vec3 &p,
+                        float sign) {
+  glm::vec3 dw = sign * (invInertiaWorld * glm::cross(rWorld, p));
+  q += 0.5f * glm::quat(0.0f, dw) * q;
+  q = glm::normalize(q);
 }
 
-// Helper function to get OBB vertices
-std::vector<glm::vec3> getOBBVertices(const OBB &obb) {
-  std::vector<glm::vec3> vertices;
-  glm::mat3 rotMatrix = glm::mat3_cast(obb.rotation);
-
-  // Generate all 8 vertices of the OBB
-  for (int i = 0; i < 8; ++i) {
-    glm::vec3 vertex =
-        glm::vec3((i & 1) ? obb.halfExtents.x : -obb.halfExtents.x,
-                  (i & 2) ? obb.halfExtents.y : -obb.halfExtents.y,
-                  (i & 4) ? obb.halfExtents.z : -obb.halfExtents.z);
-
-    // Transform to world space
-    vertex = rotMatrix * vertex + obb.position;
-    vertices.push_back(vertex);
-  }
-
-  return vertices;
+// Velocity applied at a point by a body's rigid motion.
+glm::vec3 PointVelocity(const Rigidbody &rb, const glm::vec3 &rWorld) {
+  return rb.linearVelocity + glm::cross(rb.angularVelocity, rWorld);
 }
 
-// Project OBB onto an axis and return min/max projection values
-std::pair<float, float> projectOBB(const OBB &obb, const glm::vec3 &axis) {
-  std::vector<glm::vec3> vertices = getOBBVertices(obb);
-
-  float minProj = std::numeric_limits<float>::max();
-  float maxProj = -std::numeric_limits<float>::max();
-
-  for (const auto &vertex : vertices) {
-    float projection = glm::dot(vertex, axis);
-    minProj = std::min(minProj, projection);
-    maxProj = std::max(maxProj, projection);
-  }
-
-  return {minProj, maxProj};
+// Generalized inverse mass along a direction (paper eqs. 2-3):
+//   w = 1/m + (r x n)^T I^-1 (r x n)
+float GeneralizedInvMass(const Rigidbody &rb, const glm::mat3 &invI,
+                         const glm::vec3 &rWorld, const glm::vec3 &dir) {
+  glm::vec3 rd = glm::cross(rWorld, dir);
+  return rb.invMass + glm::dot(rd, invI * rd);
 }
 
-// Check if two projection intervals overlap and return overlap amount
-float getOverlap(const std::pair<float, float> &proj1,
-                 const std::pair<float, float> &proj2) {
-  float overlap1 = proj1.second - proj2.first;
-  float overlap2 = proj2.second - proj1.first;
-  return std::min(overlap1, overlap2);
+// Applies a positional impulse p at world contact arms r1/r2 (eqs. 6-9).
+void ApplyPositionalImpulse(Transform &t1, const Rigidbody &rb1,
+                            const glm::mat3 &invI1, const glm::vec3 &r1,
+                            Transform &t2, const Rigidbody &rb2,
+                            const glm::mat3 &invI2, const glm::vec3 &r2,
+                            const glm::vec3 &p) {
+  t1.position += p * rb1.invMass;
+  t2.position -= p * rb2.invMass;
+  ApplyAngularUpdate(t1.rotation, invI1, r1, p, +1.0f);
+  ApplyAngularUpdate(t2.rotation, invI2, r2, p, -1.0f);
 }
 
-// Find the contact point between two OBBs
-glm::vec3 findContactPoint(const OBB &o1, const OBB &o2,
-                           const glm::vec3 &normal, float penetration) {
-  // Get vertices of both OBBs
-  std::vector<glm::vec3> vertices1 = getOBBVertices(o1);
-  std::vector<glm::vec3> vertices2 = getOBBVertices(o2);
-
-  // Find the vertex of o1 that penetrates deepest into o2
-  float maxPenetration = -std::numeric_limits<float>::max();
-  glm::vec3 contactPoint = o1.position;
-
-  for (const auto &vertex : vertices1) {
-    float distance = glm::dot(vertex - o2.position, normal);
-    if (distance > maxPenetration) {
-      maxPenetration = distance;
-      contactPoint = vertex;
-    }
-  }
-
-  // Adjust contact point to be on the surface
-  contactPoint -= normal * (penetration * 0.5f);
-
-  return contactPoint;
-}
-
-CollisionResult SAT(OBB o1, OBB o2) {
-  CollisionResult info;
-  info.penetration = 0.0f;
-  info.normal = glm::vec3(0.0f);
-  // info.contact = glm::vec3(0.0f);
-
-  // if (glm::length(o1.rotation) != 1.0f) {
-  //   std::printf("o1 rotation: %f\n", glm::length(o1.rotation));
-  // }
-  // if (glm::length(o2.rotation) != 1.0f) {
-  //   std::printf("o2 rotation: %f\n", glm::length(o2.rotation));
-  // }
-
-  // Get all potential separating axes
-  std::vector<glm::vec3> axes1 = getOBBAxes(o1);
-  std::vector<glm::vec3> axes2 = getOBBAxes(o2);
-
-  std::vector<glm::vec3> testAxes;
-
-  // Add face normals from both OBBs
-  testAxes.insert(testAxes.end(), axes1.begin(), axes1.end());
-  testAxes.insert(testAxes.end(), axes2.begin(), axes2.end());
-
-  // Add cross products of edges (15 possible combinations)
-  for (int i = 0; i < 3; ++i) {
-    for (int j = 0; j < 3; ++j) {
-      glm::vec3 crossAxis = glm::cross(axes1[i], axes2[j]);
-      float length = glm::length(crossAxis);
-
-      // Skip nearly parallel axes
-      if (length > 1e-6f) {
-        testAxes.push_back(crossAxis / length);
-      }
-    }
-  }
-
-  float minOverlap = std::numeric_limits<float>::max();
-  glm::vec3 separatingAxis(0.0f);
-  bool collision = true;
-
-  // Test all axes for separation
-  for (const auto &axis : testAxes) {
-    glm::vec3 normalizedAxis = glm::normalize(axis);
-
-    // Project both OBBs onto the axis
-    auto proj1 = projectOBB(o1, normalizedAxis);
-    auto proj2 = projectOBB(o2, normalizedAxis);
-
-    // Check for separation
-    if (proj1.second < proj2.first || proj2.second < proj1.first) {
-      collision = false;
-      break;
-    }
-
-    // Calculate overlap
-    float overlap = getOverlap(proj1, proj2);
-
-    // if (overlap > 100.0f) {
-    //   std::cout << "something wrong" << std::endl;
-    // }
-    if (overlap < minOverlap) {
-      minOverlap = overlap;
-      separatingAxis = normalizedAxis;
-
-      // Ensure normal points from o1 to o2
-      glm::vec3 centerDiff = o2.position - o1.position;
-      if (glm::dot(separatingAxis, centerDiff) < 0) {
-        separatingAxis = -separatingAxis;
-      }
-    }
-  }
-
-  if (collision && minOverlap != std::numeric_limits<float>::max()) {
-    info.penetration = minOverlap * 0.5f;
-    info.normal = separatingAxis;
-    // info.contact = findContactPoint(o1, o2, separatingAxis, minOverlap);
-  }
-
-  return info;
-}
-
-// inverse of stiffness and has units meters/Newton
-const float COLLISION_COMPLIANCE = 0.0f;
-
-void SolvePositions(CollisionResult &collisionInfo,
-                    ECS::Coordinator *coordinator, float h) {
-  ECS::Entity e1 = collisionInfo.bodyA;
-  ECS::Entity e2 = collisionInfo.bodyB;
-  auto &rb1 = coordinator->GetComponent<Rigidbody>(e1);
-  auto &rb2 = coordinator->GetComponent<Rigidbody>(e2);
-  auto &t1 = coordinator->GetComponent<Transform>(e1);
-  auto &t2 = coordinator->GetComponent<Transform>(e2);
-  collisionInfo.normal = glm::normalize(collisionInfo.normal);
-  if (rb1.invMass == 0 && rb2.invMass == 0) {
+// Applies a velocity change deltaV at the contact points (paper eq. 33).
+void ApplyVelocityChange(Rigidbody &rb1, const glm::mat3 &invI1,
+                         const glm::vec3 &r1, Rigidbody &rb2,
+                         const glm::mat3 &invI2, const glm::vec3 &r2,
+                         const glm::vec3 &deltaV) {
+  glm::vec3 d = deltaV;
+  float len = glm::length(d);
+  if (len < 1e-8f)
     return;
-  }
-  // NOTE: recompute penetration since this constraint might not be the only one
-  // operating on this collision so recomputation is necessary
-  // TODO: static friction (section 3.5 in xpbd)
+  d /= len;
 
-  glm::vec3 r1 = collisionInfo.contactA;
-  glm::vec3 p1 = t1.position + (t1.rotation * r1);
-
-  glm::vec3 r2 = collisionInfo.contactB;
-  glm::vec3 p2 = t2.position + (t2.rotation * r2);
-
-  // std::cout << "GlobalA recomp: (" << p1.x << "), (" << p1.y << "), (" <<
-  // p1.z
-  //           << ")\n";
-
-  // if (glm::dot(p2 - p1, collisionInfo.normal) > 0) {
-  //   collisionInfo.normal = -collisionInfo.normal;
-  // }
-
-  // std::cout << "old penetration" << collisionInfo.penetration << "\n";
-
-  collisionInfo.penetration = glm::dot((p2 - p1), collisionInfo.normal);
-  // std::cout << "recomputed penetration: " << collisionInfo.penetration <<
-  // "\n"; std::cout << "normal:" << collisionInfo.normal.x << ", "
-  //           << collisionInfo.normal.y << ", " << collisionInfo.normal.z <<
-  //           "\n";
-
-  if (collisionInfo.penetration <= 0.0f) {
-    // collisionInfo.penetration *= -1.0f;
-    // std::cout << "BUG: penetration is negative\n";
+  float denom =
+      GeneralizedInvMass(rb1, invI1, r1, d) + GeneralizedInvMass(rb2, invI2, r2, d);
+  if (denom <= 1e-12f)
     return;
-  }
-  // glm::vec3 r1 = collisionInfo.contactA;
-  // glm::vec3 r2 = collisionInfo.contactB;
 
-  // std::cout << "p1: " << p1.x << ", " << p1.y << ", " << p1.z << "\n";
-  // std::cout << "p2: " << p2.x << ", " << p2.y << ", " << p2.z << "\n";
-  // std::cout << "r1: " << r1.x << ", " << r1.y << ", " << r1.z << "\n";
-  // std::cout << "r2: " << r2.x << ", " << r2.y << ", " << r2.z << "\n";
-
-  // generalized inverse masses
-  glm::mat3 R1 = glm::mat3_cast(glm::normalize(t1.rotation));
-  glm::mat3 globalInvInertia1 = R1 * rb1.invInertia * glm::transpose(R1);
-
-  float gim1 = rb1.invMass + glm::dot(glm::cross(r1, collisionInfo.normal),
-                                      globalInvInertia1 *
-                                          glm::cross(r1, collisionInfo.normal));
-
-  glm::mat3 R2 = glm::mat3_cast(glm::normalize(t2.rotation));
-  glm::mat3 globalInvInertia2 = R2 * rb2.invInertia * glm::transpose(R2);
-
-  float gim2 = rb2.invMass + glm::dot(glm::cross(r2, collisionInfo.normal),
-                                      globalInvInertia2 *
-                                          glm::cross(r2, collisionInfo.normal));
-
-  if (gim1 == 0 && gim2 == 0) {
-    std::cout << "total inverse mass == 0\n";
-    return;
-  }
-  // lagrangeMultiplier updates
-  float aHat = COLLISION_COMPLIANCE / (h * h);
-  float dl =
-      -(-collisionInfo.penetration - aHat * collisionInfo.lagrangeMultiplier) /
-      (gim1 + gim2 + aHat);
-  // std::cout << "dl: " << dl << "\n";
-  collisionInfo.lagrangeMultiplier += dl;
-  // collisionInfo.lagrangeMultiplier =
-  //     glm::min(0.0f, collisionInfo.lagrangeMultiplier);
-  // std::cout << "lambda" << collisionInfo.lagrangeMultiplier << "\n";
-
-  glm::vec3 positionalImpulse = dl * collisionInfo.normal;
-
-  t1.position += positionalImpulse * rb1.invMass;
-  t2.position -= positionalImpulse * rb2.invMass;
-
-  t1.rotation +=
-      0.5f *
-      glm::quat(0.0, globalInvInertia1 * glm::cross(r1, positionalImpulse)) *
-      t1.rotation;
-  t2.rotation -=
-      0.5f *
-      glm::quat(0.0, globalInvInertia2 * glm::cross(r2, positionalImpulse)) *
-      t2.rotation;
-
-  // idk what to do with this (maybe store??)
-  glm::vec3 collisionForce =
-      (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
-  // if ((collisionInfo.bodyA != 0) && (collisionInfo.bodyA != 1)) {
-  //   std::cout << "CollisionForce, " << collisionInfo.bodyA << " and "
-  //             << collisionInfo.bodyB << ": " << collisionForce.x << ", "
-  //             << collisionForce.y << ", " << collisionForce.z << "\n";
-  // }
-  // std::cout << "collisionforce magnitude: " << glm::length(collisionForce)
-  //           << " and penetration: " << collisionInfo.penetration
-  //           << "lagrangeMultiplier: " << collisionInfo.lagrangeMultiplier
-  //           << std::endl;
-}
-
-void SolveVelocities(CollisionResult &collisionInfo,
-                     ECS::Coordinator *coordinator, float h) {
-  auto &rb1 = coordinator->GetComponent<Rigidbody>(collisionInfo.bodyA);
-  auto &t1 = coordinator->GetComponent<Transform>(collisionInfo.bodyA);
-  auto &rb2 = coordinator->GetComponent<Rigidbody>(collisionInfo.bodyB);
-  auto &t2 = coordinator->GetComponent<Transform>(collisionInfo.bodyB);
-
-  if (rb1.invMass == 0 && rb2.invMass == 0) {
-    return;
-  }
-
-  glm::vec3 r1 = collisionInfo.contactA;
-  glm::vec3 r2 = collisionInfo.contactB;
-
-  glm::vec3 v = (rb1.linearVelocity + glm::cross(rb1.angularVelocity, r1)) -
-                (rb2.linearVelocity + glm::cross(rb2.angularVelocity, r2));
-  float vn = glm::dot(collisionInfo.normal, v);
-  glm::vec3 vt = v - collisionInfo.normal * vn;
-
-  if (glm::length(vt) < 1e-6f) {
-    std::cout << "really small tangential velocity" << std::endl;
-    return;
-  }
-  glm::vec3 frictionDirection = -glm::normalize(vt);
-
-  float friction = (rb1.friction + rb2.friction) / 2;
-  glm::vec3 fn =
-      (collisionInfo.lagrangeMultiplier * collisionInfo.normal) / (h * h);
-
-  glm::vec3 vOld =
-      (rb1.prevLinearVelocity + glm::cross(rb1.prevAngularVelocity, r1)) -
-      (rb2.prevLinearVelocity + glm::cross(rb2.prevAngularVelocity, r2));
-  float vnOld = glm::dot(collisionInfo.normal, vOld);
-  glm::vec3 vtOld = vOld - collisionInfo.normal * vn;
-
-  glm::vec3 deltaV = -(glm::normalize(vt)) *
-                     glm::min(h * friction * glm::length(fn), glm::length(vt));
-  deltaV += collisionInfo.normal *
-            (-vn + glm::min(-collisionInfo.restitutionCoeff * vnOld, 0.0f));
-
-  glm::mat3 R1 = glm::mat3_cast(t1.rotation);
-  glm::mat3 globalInvInertia1 = R1 * rb1.invInertia * glm::transpose(R1);
-  if (glm::length(deltaV) < 1e-5f) {
-    return;
-  }
-
-  glm::vec3 dir = glm::normalize(deltaV);
-
-  float gim1 = rb1.invMass + glm::dot(glm::cross(r1, dir),
-                                      globalInvInertia1 * glm::cross(r1, dir));
-
-  glm::mat3 R2 = glm::mat3_cast(t2.rotation);
-  glm::mat3 globalInvInertia2 = R2 * rb2.invInertia * glm::transpose(R2);
-
-  float gim2 = rb2.invMass + glm::dot(glm::cross(r2, dir),
-                                      globalInvInertia2 * glm::cross(r2, dir));
-  if (gim1 == 0 && gim2 == 0) {
-    return;
-  }
-
-  glm::vec3 p = deltaV / (gim1 + gim2);
-
+  glm::vec3 p = (len / denom) * d;
   rb1.linearVelocity += p * rb1.invMass;
   rb2.linearVelocity -= p * rb2.invMass;
+  rb1.angularVelocity += invI1 * glm::cross(r1, p);
+  rb2.angularVelocity -= invI2 * glm::cross(r2, p);
+}
 
-  rb1.angularVelocity += globalInvInertia1 * glm::cross(r1, p);
-  rb2.angularVelocity -= globalInvInertia2 * glm::cross(r2, p);
+} // namespace
+
+// Positional contact constraint, paper §3.5.
+//
+//   C  = (p1 - p2) . n          p1/p2 = current world contact points
+//   dλ = (-C - a~ λ) / (w1 + w2 + a~),  a~ = compliance / h²
+//   p  = dλ n
+//
+// The contact offsets stored in CollisionResult are in body space (so they can
+// be re-evaluated every substep); they are rotated into world space here.
+void SolvePositions(CollisionResult &c, ECS::Coordinator *coordinator,
+                    float h) {
+  auto &rb1 = coordinator->GetComponent<Rigidbody>(c.bodyA);
+  auto &t1 = coordinator->GetComponent<Transform>(c.bodyA);
+  auto &rb2 = coordinator->GetComponent<Rigidbody>(c.bodyB);
+  auto &t2 = coordinator->GetComponent<Transform>(c.bodyB);
+
+  if (rb1.invMass == 0.0f && rb2.invMass == 0.0f)
+    return;
+
+  glm::vec3 n = glm::normalize(c.normal);
+  glm::vec3 r1 = t1.rotation * c.contactA; // world contact arm
+  glm::vec3 r2 = t2.rotation * c.contactB;
+
+  glm::mat3 invI1 = WorldInvInertia(t1, rb1);
+  glm::mat3 invI2 = WorldInvInertia(t2, rb2);
+
+  // ---- normal constraint ---------------------------------------------------
+  {
+    glm::vec3 p1 = t1.position + r1;
+    glm::vec3 p2 = t2.position + r2;
+    float C = glm::dot(p1 - p2, n); // > 0 while penetrating
+    if (C > 0.0f) {                 // complementarity: skip if separated
+      const float aHat = COLLISION_COMPLIANCE / (h * h);
+      float w1 = GeneralizedInvMass(rb1, invI1, r1, n);
+      float w2 = GeneralizedInvMass(rb2, invI2, r2, n);
+      float denom = w1 + w2 + aHat;
+      if (denom > 1e-12f) {
+        float dLambda = (-C - aHat * c.lagrangeN) / denom;
+        c.lagrangeN += dLambda;
+
+        ApplyPositionalImpulse(t1, rb1, invI1, r1, t2, rb2, invI2, r2,
+                               dLambda * n);
+      }
+    }
+  }
+
+  // ---- static friction, paper §3.5 ----------------------------------------
+  // Cancels the tangential drift the two contact points picked up since the
+  // start of the substep, bounded by Coulomb's cone |λt| <= µs |λn|.
+  {
+    glm::vec3 dp1 = (t1.position + t1.rotation * c.contactA) -
+                    (rb1.prevPosition + rb1.prevRotation * c.contactA);
+    glm::vec3 dp2 = (t2.position + t2.rotation * c.contactB) -
+                    (rb2.prevPosition + rb2.prevRotation * c.contactB);
+    glm::vec3 dp = dp1 - dp2;
+    glm::vec3 dpT = dp - n * glm::dot(dp, n);
+    float dpTlen = glm::length(dpT);
+
+    if (dpTlen > 1e-8f) {
+      glm::vec3 dT = dpT / dpTlen; // direction to cancel the tangential drift
+      float w1 = GeneralizedInvMass(rb1, invI1, r1, dT);
+      float w2 = GeneralizedInvMass(rb2, invI2, r2, dT);
+      float denom = w1 + w2;
+      if (denom > 1e-12f) {
+        float dLambdaMag = dpTlen / denom;
+        // Coulomb limit: |λt - dλ| <= µs |λn| => dλ bounded by the remaining
+        // cone budget in the direction of the correction.
+        float limit = c.frictionCoeff * std::abs(c.lagrangeN) + c.lagrangeT;
+        dLambdaMag = glm::min(dLambdaMag, glm::max(limit, 0.0f));
+        c.lagrangeT -= dLambdaMag;
+
+        ApplyPositionalImpulse(t1, rb1, invI1, r1, t2, rb2, invI2, r2,
+                               -dLambdaMag * dT);
+      }
+    }
+  }
+}
+
+// Velocity pass, paper §3.6: dynamic Coulomb friction then restitution.
+void SolveVelocities(CollisionResult &c, ECS::Coordinator *coordinator,
+                     float h) {
+  auto &rb1 = coordinator->GetComponent<Rigidbody>(c.bodyA);
+  auto &t1 = coordinator->GetComponent<Transform>(c.bodyA);
+  auto &rb2 = coordinator->GetComponent<Rigidbody>(c.bodyB);
+  auto &t2 = coordinator->GetComponent<Transform>(c.bodyB);
+
+  if (rb1.invMass == 0.0f && rb2.invMass == 0.0f)
+    return;
+
+  glm::vec3 n = glm::normalize(c.normal);
+  glm::vec3 r1 = t1.rotation * c.contactA;
+  glm::vec3 r2 = t2.rotation * c.contactB;
+
+  glm::mat3 invI1 = WorldInvInertia(t1, rb1);
+  glm::mat3 invI2 = WorldInvInertia(t2, rb2);
+
+  // Relative normal velocity from before this substep's position projection.
+  // vn < 0 means the bodies are approaching (it is d/dt of the penetration).
+  glm::vec3 vOld =
+      (rb1.prevLinearVelocity + glm::cross(rb1.prevAngularVelocity, r1)) -
+      (rb2.prevLinearVelocity + glm::cross(r2, rb2.prevAngularVelocity));
+  float vnOld = glm::dot(n, vOld);
+
+  // ---- dynamic friction, eq. (30) ----------------------------------------
+  // Δv = -(vt/|vt|) min(µd |fn|, |vt|) with |fn| = |λn| / h².
+  {
+    glm::vec3 v = PointVelocity(rb1, r1) - PointVelocity(rb2, r2);
+    glm::vec3 vT = v - n * glm::dot(n, v);
+    float vTlen = glm::length(vT);
+    if (vTlen > 1e-6f) {
+      float fN = std::abs(c.lagrangeN) / (h * h);
+      float magnitude = glm::min(c.frictionCoeff * fN, vTlen);
+      ApplyVelocityChange(rb1, invI1, r1, rb2, invI2, r2,
+                          -(vT / vTlen) * magnitude);
+    }
+  }
+
+  // ---- restitution, eq. (34) ---------------------------------------------
+  // vn < 0 means approaching, so the target normal velocity is
+  // min(e*vnOld, 0) <= 0. With e = 0 this simply zeroes the normal velocity,
+  // removing the spurious separating speed the position solve derives from
+  // penetration depth (paper §3.6, fig. 13) — critical for initially
+  // overlapping bodies.
+  {
+    const float restitutionThreshold = 2.0f * 9.81f * h;
+    float e = (-vnOld > restitutionThreshold) ? c.restitutionCoeff : 0.0f;
+
+    glm::vec3 v = PointVelocity(rb1, r1) - PointVelocity(rb2, r2);
+    float vn = glm::dot(n, v);
+    float targetVn = glm::min(e * vnOld, 0.0f);
+    ApplyVelocityChange(rb1, invI1, r1, rb2, invI2, r2, n * (targetVn - vn));
+  }
 }

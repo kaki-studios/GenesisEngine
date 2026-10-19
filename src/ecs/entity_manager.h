@@ -3,8 +3,10 @@
 #pragma once
 #include <array>
 #include <bitset>
+#include <cassert>
 #include <cstdint>
 #include <queue>
+
 namespace ECS {
 using Entity = std::uint32_t;
 const Entity MAX_ENTITIES = 5000;
@@ -27,8 +29,6 @@ private:
   std::queue<Entity> mAvailableEntities{};
   // index = entity id
   std::array<Signature, MAX_ENTITIES> mSignatures{};
-  // used to keep limits on how many exist
-  uint32_t mLivingEntityCount{};
 };
 
 } // namespace ECS

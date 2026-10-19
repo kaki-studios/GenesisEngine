@@ -1,28 +1,22 @@
+#pragma once
 #include "collider.h"
 #include "epa.h"
-#include "glm/geometric.hpp"
-#include <glm/common.hpp>
 #include <glm/vec3.hpp>
-
-// NOTE: dot(n,x)=d, where x is a point on the plane
-struct Plane {
-  glm::vec3 normal;
-  float d;
-  inline float signedDistance(const glm::vec3 &x) const {
-    return glm::dot(normal, x) + d;
-  }
-};
+#include <vector>
 
 struct ContactPoint {
-  glm::vec3 positionA;
-  glm::vec3 positionB;
+  glm::vec3 positionA; // contact point on body A, world space
+  glm::vec3 positionB; // contact point on body B, world space
 };
 
 struct ContactManifold {
-  glm::vec3 normal; // incident -> reference (same direction as EPA normal after
-                    // choosing reference)
+  // Unit vector pointing from body A towards body B. For every point
+  // (positionA - positionB) . normal >= 0 while penetrating.
+  glm::vec3 normal;
   std::vector<ContactPoint> points; // up to 4
 };
 
+// A and B are passed in the same order as they were fed to GJK/EPA, so
+// epa.normal points A -> B.
 ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
                                      const CollisionResult &epa);

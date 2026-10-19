@@ -6,11 +6,13 @@
 CuboidCollider::CuboidCollider(const glm::vec3 &hExt) : halfExtents(hExt) {
   type = ColliderType::CuboidColliderType;
 }
-CuboidCollider::CuboidCollider(glm::vec3 &&hExt) : halfExtents(hExt) {}
+CuboidCollider::CuboidCollider(glm::vec3 &&hExt) : halfExtents(hExt) {
+  type = ColliderType::CuboidColliderType;
+}
 
 // maximizes dot product
 glm::vec3 const CuboidCollider::support(const glm::vec3 direction) const {
-  glm::vec3 localDir = glm::inverse(glm::normalize(rotation)) * direction;
+  glm::vec3 localDir = glm::inverse(rotation) * direction;
 
   glm::vec3 localSupport =
       glm::vec3(localDir.x >= 0 ? halfExtents.x : -halfExtents.x,
@@ -23,12 +25,15 @@ glm::vec3 const CuboidCollider::support(const glm::vec3 direction) const {
 int const CuboidCollider::getFaceCount() const { return 6; }
 
 Face const CuboidCollider::getFace(int i) const {
-  // ccw
+  // Vertex i encodes its sign bits: bit0 = +X, bit1 = +Y, bit2 = +Z.
+  // Every loop below is wound CCW when viewed from outside the box, i.e.
+  // cross(v1-v0, v2-v1) points along the outward normal. clipping.cpp relies
+  // on this to build inward side planes.
   static const int faceIndices[6][4] = {
-      {1, 5, 7, 3}, // +X
-      {0, 2, 6, 4}, // -X
-      {7, 3, 2, 6}, // +Y
-      {5, 4, 0, 1}, // -Y
+      {1, 3, 7, 5}, // +X
+      {0, 4, 6, 2}, // -X
+      {2, 6, 7, 3}, // +Y
+      {0, 1, 5, 4}, // -Y
       {4, 5, 7, 6}, // +Z
       {0, 2, 3, 1}  // -Z
   };
@@ -36,8 +41,7 @@ Face const CuboidCollider::getFace(int i) const {
                                        {0, -1, 0}, {0, 0, 1},  {0, 0, -1}};
 
   Face f;
-  f.normal = glm::normalize(rotation) * normals[i];
-  f.normal = glm::normalize(f.normal);
+  f.normal = glm::normalize(rotation * normals[i]);
   f.indices.assign(&faceIndices[i][0], &faceIndices[i][4]);
   return f;
 }

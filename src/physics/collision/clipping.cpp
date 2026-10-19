@@ -1,39 +1,41 @@
 #include "clipping.h"
 #include "collider.h"
-#include "glm/geometric.hpp"
-#include "physics/collision/epa.h"
-#include <iostream>
+#include <algorithm>
+#include <cmath>
+#include <limits>
 #include <utility>
 #include <vector>
 
-// NOTE: check TODO.md
-// NOTE: check:
-// https://github.com/felipeek/raw-physics/blob/master/src/physics/clipping.cpp
+namespace {
 
-inline Plane makePlane(const glm::vec3 &nUnit, const glm::vec3 &pointOnPlane) {
-  return Plane{glm::normalize(nUnit),
-               -glm::dot(glm::normalize(nUnit), pointOnPlane)};
+// Plane: dot(normal, x) + d = 0, `normal` unit.
+struct Plane {
+  glm::vec3 normal;
+  float d;
+  float signedDistance(const glm::vec3 &x) const {
+    return glm::dot(normal, x) + d;
+  }
+};
+
+Plane makePlane(const glm::vec3 &nUnit, const glm::vec3 &pointOnPlane) {
+  glm::vec3 n = glm::normalize(nUnit);
+  return Plane{n, -glm::dot(n, pointOnPlane)};
 }
 
-// Collect world-space vertices of a face (CCW when seen along +face.normal)
-inline std::vector<glm::vec3> getWorldFaceVerts(const ICollider &h,
-                                                int faceIdx) {
+std::vector<glm::vec3> getWorldFaceVerts(const ICollider &h, int faceIdx) {
   Face f = h.getFace(faceIdx);
   std::vector<glm::vec3> out;
   out.reserve(f.indices.size());
-  for (int idx : f.indices) {
-    auto vert = h.getVertex(idx);
-    out.push_back(vert);
-    // std::cout << "vertex " << idx << " for face: " << faceIdx << ": (" <<
-    // vert.x
-    //           << "), (" << vert.y << "), (" << vert.z << ")\n";
-  }
+  for (int idx : f.indices)
+    out.push_back(h.getVertex(idx));
   return out;
 }
 
-// Build inward side-planes for a convex face polygon.
-// Requires: faceVerts CCW w.r.t. outward normal nOut.
-inline std::vector<Plane>
+// Inward half-space planes of a convex face polygon.
+// NOTE: the box face loops in CuboidCollider::getFace are wound *clockwise*
+// w.r.t. their outward normal, so cross(edge, nOut) points into the face.
+// Verified for every face — do not "fix" the winding without changing this.
+std::vector<Plane>
 buildInwardSidePlanes(const std::vector<glm::vec3> &faceVerts,
                       const glm::vec3 &nOut) {
   const int N = (int)faceVerts.size();
@@ -42,22 +44,15 @@ buildInwardSidePlanes(const std::vector<glm::vec3> &faceVerts,
   for (int i = 0; i < N; ++i) {
     const glm::vec3 &a = faceVerts[i];
     const glm::vec3 &b = faceVerts[(i + 1) % N];
-    glm::vec3 edge = b - a;
-    glm::vec3 inward =
-        glm::normalize(glm::cross(edge, nOut)); // points into the face
+    glm::vec3 inward = glm::normalize(glm::cross(b - a, nOut));
     planes.push_back(makePlane(inward, a));
   }
   return planes;
 }
 
-static bool isPointInPlane(const Plane &plane, glm::vec3 pos) {
-  return (glm::dot(pos, plane.normal) + plane.d <= 0.0f);
-}
-
-// Sutherland–Hodgman: clip polygon against a single half-space (dot(n,x) <= d)
-inline std::vector<glm::vec3>
-clipAgainstPlane(const std::vector<glm::vec3> &poly, const Plane &P,
-                 float eps = 1e-6f) {
+// Sutherland–Hodgman against one half-space: keeps dot(n, x) + d <= 0.
+std::vector<glm::vec3> clipAgainstPlane(const std::vector<glm::vec3> &poly,
+                                        const Plane &P, float eps = 1e-6f) {
   std::vector<glm::vec3> out;
   if (poly.empty())
     return out;
@@ -75,11 +70,10 @@ clipAgainstPlane(const std::vector<glm::vec3> &poly, const Plane &P,
     if (inA && inB) {
       out.push_back(B);
     } else if (inA && !inB) {
-      // out.push_back(A);
-      float t = da / (da - db + 1e-30f);
+      float t = da / (da - db);
       out.push_back(A + t * (B - A));
     } else if (!inA && inB) {
-      float t = da / (da - db + 1e-30f);
+      float t = da / (da - db);
       out.push_back(A + t * (B - A));
       out.push_back(B);
     }
@@ -87,8 +81,8 @@ clipAgainstPlane(const std::vector<glm::vec3> &poly, const Plane &P,
   return out;
 }
 
-inline std::vector<glm::vec3> clipByPlanes(std::vector<glm::vec3> poly,
-                                           const std::vector<Plane> &planes) {
+std::vector<glm::vec3> clipByPlanes(std::vector<glm::vec3> poly,
+                                    const std::vector<Plane> &planes) {
   for (const Plane &pl : planes) {
     poly = clipAgainstPlane(poly, pl);
     if (poly.empty())
@@ -97,14 +91,13 @@ inline std::vector<glm::vec3> clipByPlanes(std::vector<glm::vec3> poly,
   return poly;
 }
 
-// Find the face whose outward normal is most aligned with dir (max dot).
-inline int findFaceMostAligned(const ICollider &h, const glm::vec3 &dir) {
+// Face whose outward normal is most aligned with dir.
+int findFaceMostAligned(const ICollider &h, const glm::vec3 &dir) {
   int best = 0;
   float bestDot = -std::numeric_limits<float>::infinity();
   const int N = h.getFaceCount();
   for (int i = 0; i < N; ++i) {
-    glm::vec3 n = h.getFace(i).normal; // world outward
-    float d = glm::dot(n, dir);
+    float d = glm::dot(h.getFace(i).normal, dir);
     if (d > bestDot) {
       bestDot = d;
       best = i;
@@ -113,8 +106,8 @@ inline int findFaceMostAligned(const ICollider &h, const glm::vec3 &dir) {
   return best;
 }
 
-// Reduce to ≤4 points (keeps them spread; simple heuristic).
-inline std::vector<glm::vec3> reduceToFour(const std::vector<glm::vec3> &pts) {
+// Reduce to <= 4 well spread points.
+std::vector<glm::vec3> reduceToFour(const std::vector<glm::vec3> &pts) {
   if (pts.size() <= 4)
     return pts;
   glm::vec3 c(0.0f);
@@ -138,27 +131,21 @@ inline std::vector<glm::vec3> reduceToFour(const std::vector<glm::vec3> &pts) {
   int i0 = farthestFrom(c);
   int i1 = farthestFrom(pts[i0]);
 
-  auto triArea2 = [&](int k) {
-    return glm::length(glm::cross(pts[i1] - pts[i0], pts[k] - pts[i0]));
-  };
   int i2 = i0;
   float a2 = -1.0f;
   for (int i = 0; i < (int)pts.size(); ++i) {
-    float a = triArea2(i);
+    float a = glm::length(glm::cross(pts[i1] - pts[i0], pts[i] - pts[i0]));
     if (a > a2) {
       a2 = a;
       i2 = i;
     }
   }
 
-  auto sumDist = [&](int k) {
-    return glm::length(pts[k] - pts[i0]) + glm::length(pts[k] - pts[i1]) +
-           glm::length(pts[k] - pts[i2]);
-  };
   int i3 = i0;
   float sBest = -1.0f;
   for (int i = 0; i < (int)pts.size(); ++i) {
-    float s = sumDist(i);
+    float s = glm::length(pts[i] - pts[i0]) + glm::length(pts[i] - pts[i1]) +
+              glm::length(pts[i] - pts[i2]);
     if (s > sBest) {
       sBest = s;
       i3 = i;
@@ -173,117 +160,86 @@ inline std::vector<glm::vec3> reduceToFour(const std::vector<glm::vec3> &pts) {
   return out;
 }
 
+} // namespace
+
 ContactManifold buildContactManifold(const ICollider &A, const ICollider &B,
                                      const CollisionResult &epa) {
-  // std::cout << "building contact manifold with epa contact point 1: ("
-  //           << epa.contactA.x << ", " << epa.contactA.y << ", "
-  //           << epa.contactA.z << "), and contact point 2: (" <<
-  //           epa.contactB.x
-  //           << ", " << epa.contactB.y << ", " << epa.contactB.z << ")\n";
-
   ContactManifold m{};
+  // EPA's outward face normal of the Minkowski difference (A - B) points from
+  // A towards B (see epa.cpp).
+  glm::vec3 nAB = glm::normalize(epa.normal);
 
-  // EPA normal points B -> A by convention.
-  glm::vec3 nEPA = -glm::normalize(epa.normal);
-  // if (epa.penetration <= 0.0f)
-  //   epa.penetration = -epa.penetration;
+  // Reference face: the face of either body that points most towards the other.
+  int aRef = findFaceMostAligned(A, nAB);
+  int bRef = findFaceMostAligned(B, -nAB);
+  float aAlign = glm::dot(A.getFace(aRef).normal, nAB);
+  float bAlign = glm::dot(B.getFace(bRef).normal, -nAB);
 
-  const ICollider *REF = &A;
-  const ICollider *INC = &B;
+  bool refIsA = (aAlign >= bAlign);
+  const ICollider &REF = refIsA ? A : B;
+  const ICollider &INC = refIsA ? B : A;
+  int refIdx = refIsA ? aRef : bRef;
+  glm::vec3 nRefOut = REF.getFace(refIdx).normal;
+  // incident face is the one most opposed to the reference face
+  int incIdx = findFaceMostAligned(INC, -nRefOut);
 
-  // Decide reference vs incident:
-  // Choose the collider that has a face most aligned with nEPA as reference.
-  int aRef = findFaceMostAligned(A, -nEPA);
-  int bRef = findFaceMostAligned(
-      B, nEPA); // if B is reference, its outward normal aligns with -nEPA
+  std::vector<glm::vec3> refVerts = getWorldFaceVerts(REF, refIdx);
+  std::vector<glm::vec3> incVerts = getWorldFaceVerts(INC, incIdx);
+  if (refVerts.empty() || incVerts.empty())
+    return m;
 
-  float aAlign = glm::dot(A.getFace(aRef).normal, -nEPA);
-  float bAlign = glm::dot(B.getFace(bRef).normal, nEPA);
-
-  int refIdx = aRef;
-  int incIdx = -1;
-  glm::vec3 nRefOut =
-      A.getFace(aRef).normal; // outward normal of reference face (world)
-  glm::vec3 mNormal = nEPA;   // manifold normal (incident -> reference)
-
-  if (bAlign > aAlign) {
-    // std::cout << "flipping normals\n";
-    REF = &B;
-    INC = &A;
-    refIdx = bRef;
-    nRefOut = B.getFace(bRef).normal;
-    mNormal = -nEPA; // ensure incident -> reference
-  }
-
-  // Incident face is the one most opposed to manifold normal (== aligned with
-  // -mNormal). flipped bc don't work
-  incIdx = findFaceMostAligned(*INC, mNormal);
-
-  // World-space polygons
-  std::vector<glm::vec3> refVerts =
-      getWorldFaceVerts(*REF, refIdx); // CCW wrt nRefOut
-  std::vector<glm::vec3> incVerts = getWorldFaceVerts(*INC, incIdx);
-
-  // Build inward side planes for reference polygon and clip incident polygon
   std::vector<Plane> sidePlanes = buildInwardSidePlanes(refVerts, nRefOut);
   std::vector<glm::vec3> clipped = clipByPlanes(incVerts, sidePlanes);
+  if (clipped.empty())
+    return m;
 
-  // Project onto the reference face plane (eliminate tiny drift)
+  // Keep only points on or behind the reference face, projected onto its plane.
   Plane refPlane = makePlane(nRefOut, refVerts[0]);
-  const float eps = 1e-5f;
-
   std::vector<glm::vec3> contacts;
   contacts.reserve(clipped.size());
   for (const glm::vec3 &p : clipped) {
-    float sd = refPlane.signedDistance(
-        p); // >0 means in front of outward normal (outside)
-    // std::cout << "sd: " << sd << "\n";
-    if (sd <= eps || std::abs(sd) < 0.001f) {
-      glm::vec3 proj = p - sd * refPlane.normal;
-      contacts.push_back(proj);
-      // contacts.push_back(p);
-    }
+    float sd = refPlane.signedDistance(p);
+    if (sd <= 1e-3f)
+      contacts.push_back(p - sd * refPlane.normal);
   }
-
-  if (contacts.empty()) {
-    // Degenerate case; you can fallback to a single point along the normal.
-    // Here we just return empty points but keep normal & penetration.
-    // std::cout << "no contacts, Degenerate\n";
-    m.normal = mNormal;
-    m.points.push_back({epa.contactA, epa.contactB});
+  if (contacts.empty())
     return m;
-  }
 
-  // Optional: cap to ≤ 4 points for solver stability/perf
   contacts = reduceToFour(contacts);
 
-  m.normal = mNormal;
-
-  // Get the incident face plane
-  Face incFace = INC->getFace(incIdx);
+  // Direction leading from the reference face to the incident body's surface.
+  glm::vec3 toIncident = refIsA ? -nAB : nAB;
+  Face incFace = INC.getFace(incIdx);
   Plane incPlane = makePlane(incFace.normal, incVerts[0]);
-  for (auto &v : contacts) {
-    // v is the clipped point on reference face
+  float cosAngle = glm::dot(incPlane.normal, toIncident);
+  if (std::abs(cosAngle) < 1e-4f)
+    return m; // faces nearly perpendicular: no usable depth
 
-    // Measure distance from v to incident plane along mNormal
-    // This is the actual penetration at this contact point
-    float distToIncPlane = -incPlane.signedDistance(v);
+  m.normal = nAB;
+  for (const glm::vec3 &v : contacts) {
+    // Depth from the reference point to the incident plane, along toIncident.
+    float depth = -incPlane.signedDistance(v) / cosAngle;
+    if (depth < -1e-4f)
+      continue;
+    depth = glm::max(depth, 0.0f);
 
-    // Adjust for the fact we need distance along mNormal, not along incPlane
-    // normal
-    float cosAngle = glm::dot(mNormal, incPlane.normal);
-    float penetration = distToIncPlane / (std::abs(cosAngle) + 1e-6f);
-    penetration = std::max(0.0f, penetration);
-
-    glm::vec3 contactA, contactB;
-    if (REF == &A) {
-      contactA = v;
-      contactB = v - mNormal * penetration;
+    glm::vec3 pA, pB;
+    if (refIsA) {
+      pA = v;
+      pB = v + toIncident * depth;
     } else {
-      contactB = v;
-      contactA = v + mNormal * penetration;
+      pB = v;
+      pA = v + toIncident * depth;
     }
-    m.points.push_back({contactA, contactB});
+    // Guarantee the invariant the solver relies on: (pA - pB) . nAB >= 0.
+    if (glm::dot(pA - pB, nAB) < -1e-4f)
+      continue;
+    m.points.push_back({pA, pB});
+  }
+
+  if (m.points.empty()) {
+    // Degenerate clipping: fall back to EPA's barycentric contact pair.
+    m.points.push_back({epa.contactA, epa.contactB});
   }
 
   return m;

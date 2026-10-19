@@ -60,7 +60,7 @@ private:
   std::unordered_map<Entity, size_t> mEntityToIndexMap;
   std::unordered_map<size_t, Entity> mIndexToEntityMap;
   // size of the valid entries in the array
-  size_t mSize;
+  size_t mSize{};
 };
 
 } // namespace ECS

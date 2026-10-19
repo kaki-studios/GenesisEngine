@@ -46,10 +46,10 @@ void DebugCollisions::SetCollisions(std::vector<CollisionResult> collisions,
     coordinator->AddComponent(entity, DebugMarker{});
     coordinator->AddComponent(
         entity, Cuboid{
-                    .halfExtents = glm::vec3(
-                        0.1, 0.1, collision.lagrangeMultiplier * strecthFactor),
+                    .halfExtents =
+                        glm::vec3(0.1f, 0.1f, 0.1f),
                     .color = glm::vec3((float(20 - iter) / 20.0f),
-                                       float(iter) / 20.0f, 0.0),
+                                       float(iter) / 20.0f, 0.0f),
                 });
 
     glm::quat dir = glm::quatLookAt(collision.normal, glm::vec3(0.0, 1.0, 0.0));
