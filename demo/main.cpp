@@ -1,3 +1,4 @@
+#include "glm/detail/type_quat.hpp"
 #include "glm/ext/matrix_transform.hpp"
 #include "glm/ext/quaternion_float.hpp"
 #include "glm/ext/quaternion_trigonometric.hpp"
@@ -152,6 +153,7 @@ int main(int argc, char *argv[]) {
   bool lastKeyState = false;
   bool currKeyState = false;
   bool paused = false;
+  auto &cameraTransform = app.coordinator.GetComponent<Transform>(camera);
 
   while (!app.ShouldClose()) {
     deltaTime = (now - last) / 1000.0;
@@ -167,8 +169,8 @@ int main(int argc, char *argv[]) {
       glm::vec3 halfExtents = glm::vec3(2.5f, 2.5f, 2.5f);
       app.coordinator.AddComponent(newEntity,
                                    Transform{
-                                       .position = glm::vec3(0.0f, 15.0f, 0.0f),
-                                       .rotation = glm::identity<glm::quat>(),
+                                       .position = cameraTransform.position + (cameraTransform.rotation * glm::vec3(0.0f, 0.0f, -1.0f) * 10.0f),
+                                       .rotation = glm::quat(0.0f, 0.1f, 0.1f, 0.1f),
                                    });
 
       app.coordinator.AddComponent(newEntity,
@@ -183,6 +185,9 @@ int main(int argc, char *argv[]) {
                                    CreateCuboidRB(halfExtents, 1.0f));
 
       auto &rb = app.coordinator.GetComponent<Rigidbody>(newEntity);
+      rb.angularVelocity = glm::vec3(1.0f, 1.0f, 1.0f);
+      rb.linearVelocity =
+          cameraTransform.rotation * glm::vec3(0.0f, 0.0f, -1.0f) * 20.0f;
       rb.extForce = glm::vec3(0.0f, -9.81f / rb.invMass, 0.0f);
     }
     accumulator += deltaTime;
